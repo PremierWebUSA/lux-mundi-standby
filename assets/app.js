@@ -33,15 +33,15 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794264293");
+  const indexReady = loadScript("data-js/index.js?v=1794264650");
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
-  indexReady.then(() => loadScript("data-js/glossary.js?v=1794264293")).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794264293"));
+  indexReady.then(() => loadScript("data-js/glossary.js?v=1794264650")).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794264650"));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794264293").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794264650").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794264293").catch(rej);
+    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794264650").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
@@ -532,7 +532,7 @@
       ["MLA", `“${t}.” <i>The Jesus Archive</i>, ${url.replace(/^https:\/\//, "")}. Accessed ${now.getDate()} ${month(now)} ${now.getFullYear()}.`],
       ["APA", `The Jesus Archive. (n.d.). <i>${t}</i>. Retrieved ${long}, from ${url}`],
     ];
-    const src = citeInfo.source?.name ? `<p class="cite-src"><b class="caps">Original source</b>${esc(citeInfo.source.name)}${citeInfo.source.url ? ` — ${esc(citeInfo.source.url)}` : ""}</p>` : "";
+    const src = citeInfo.source?.name ? `<p class="cite-src"><b class="caps">Original source</b>${esc(citeInfo.source.name)}${citeInfo.source.url ? `, ${esc(citeInfo.source.url)}` : ""}</p>` : "";
     const pop = document.createElement("div");
     pop.className = "cite-pop";
     pop.setAttribute("role", "dialog");
@@ -868,7 +868,7 @@
         </section>
         <section class="after">
           <div class="provenance">
-            ${d.source?.name || d.source?.url ? `<b>Source</b><span>${esc(d.source.name || "")}${d.source.url ? ` — <a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.url)}</a>` : ""}</span>` : ""}
+            ${d.source?.name || d.source?.url ? `<b>Source</b><span>${esc(d.source.name || "")}${d.source.url ? `, <a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.url)}</a>` : ""}</span>` : ""}
             ${d.source?.license ? `<b>Licence</b><span>${esc(d.source.license)}</span>` : ""}
             ${refs.length ? `<b>Cited as</b><span class="ref-chips">${refs.map((r) => `<a href="#/doc/citations/${r}" data-ref="${r}">${r}</a>`).join("")}</span>` : ""}
           </div>
@@ -1151,7 +1151,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794264293`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794264650`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1165,7 +1165,7 @@
   /* ═════════════ SIDE BY SIDE ═════════════ */
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript("data-js/compare.js?v=1794264293");
+    if (!COMPARE) await loadScript("data-js/compare.js?v=1794264650");
     const list = COMPARE || [];
     if (!slug) {
       document.title = "Compare the Accounts | The Jesus Archive";
@@ -1346,7 +1346,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = "The Chain of Witnesses | The Jesus Archive";
-    chainReady ||= loadScript("assets/chain.js?v=1794264293");
+    chainReady ||= loadScript("assets/chain.js?v=1794264650");
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">The chart could not be loaded.</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1379,7 +1379,7 @@
       <div class="map-legend"><h1 class="caps">The Map</h1><p>Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">Where written</button><button type="button" data-layer="story">Places in the story</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794264293");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794264650");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1520,7 +1520,7 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = "The Gallery | The Jesus Archive";
-    if (!window.STORIES) await loadScript("assets/stories.js?v=1794264293").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript("assets/stories.js?v=1794264650").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
@@ -1643,7 +1643,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794264293").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794264650").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
