@@ -33,15 +33,15 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794260777");
+  const indexReady = loadScript("data-js/index.js?v=1794262913");
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
-  indexReady.then(() => loadScript("data-js/glossary.js?v=1794260777")).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794260777"));
+  indexReady.then(() => loadScript("data-js/glossary.js?v=1794262913")).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794262913"));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794260777").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794262913").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794260777").catch(rej);
+    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794262913").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
@@ -186,6 +186,10 @@
     currentHash = routeKey();
     const id = rest.join("/");
 
+    // On the first, prerendered load, keep the header painting that is already on screen: rebuilding the page
+    // would swap in a fresh copy of it, and the browser (and Google's page-speed measure) waits for that copy to paint.
+    const keptPlate = ssrFirst ? $(".banner .plate img, .doc-head .plate img", view) : null;
+
     if (!kind) renderHome();
     else if (kind === "s" && (SECTIONS[rest[0]] || rest[0] === "sources")) renderSection(rest[0]);
     else if (kind === "doc" && CARDS[id]) await renderDoc(id, params);
@@ -199,6 +203,8 @@
     else if (kind === "gallery") await renderGallery(rest[0]);
     else if (STUDY[kind] && !rest.length) await renderStudy(kind);
     else renderLost();
+
+    if (keptPlate) { const fresh = $(".banner .plate img, .doc-head .plate img", view); if (fresh && fresh.getAttribute("src") === keptPlate.getAttribute("src")) fresh.replaceWith(keptPlate); }
 
     const top = "/" + (kind === "p" ? "people" : SPECIAL.has(kind) ? kind : "");
     $$(".bar-nav a").forEach((a) => a.classList.toggle("on", top !== "/" && a.getAttribute("href") === top));
@@ -841,7 +847,7 @@
         <div class="doc-head-copy">
           <nav class="crumbs caps"><a href="#/">The Jesus Archive</a><i>/</i><a href="#/s/${sec.id}">${esc(sec.title)}</a>${c.group && !isSource ? `<i>/</i><span>${esc(c.group)}</span>` : ""}</nav>
           <h1>${esc(isSource ? `${c.short}` : d.title)}</h1>
-          <div class="doc-byline">${d.date_label ? `<span class="chip">${esc(d.date_label)}</span>` : ""}${d.author ? `<span>${esc(d.author)}</span>` : ""}${c.words > 400 && !isSource ? `<span style="color:var(--text-3)">· ${minutes(c.words)} min read</span>` : ""}</div>
+          <div class="doc-byline">${d.date_label ? `<span class="chip">${esc(d.date_label)}</span>` : ""}${d.author ? `<span>${esc(d.author)}</span>` : ""}${c.words > 400 && !isSource ? `<span style="color:var(--text-3)">· ${minutes(c.words)} min read</span>` : ""}${d.updated && !isSource ? `<span style="color:var(--text-3)">· ${d.published && d.published !== d.updated ? "Revised" : "Published"} <time datetime="${d.updated}">${new Date(d.updated + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time></span>` : ""}</div>
           ${(isSource ? d.title : d.summary) ? `<p class="doc-summary">${esc(isSource ? d.title : d.summary)}</p>` : ""}
           <div class="doc-actions">${d.passages?.length ? `<a class="btn btn-gold" href="#" data-go="passages">What it says of Christ</a>` : ""}<a class="btn btn-ghost" href="#" data-go="text">${isSource ? "Details" : "Read the text"}</a><button type="button" class="btn btn-ghost" data-cite>Cite this page</button>${comps.length ? `<a class="btn btn-ghost" href="#/compare/${comps[0].slug}">Compare accounts</a>` : ""}</div>
         </div>
@@ -1145,7 +1151,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794260777`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794262913`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1159,7 +1165,7 @@
   /* ═════════════ SIDE BY SIDE ═════════════ */
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript("data-js/compare.js?v=1794260777");
+    if (!COMPARE) await loadScript("data-js/compare.js?v=1794262913");
     const list = COMPARE || [];
     if (!slug) {
       document.title = "Compare the Accounts — The Jesus Archive";
@@ -1340,7 +1346,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = "The Chain of Witnesses — The Jesus Archive";
-    chainReady ||= loadScript("assets/chain.js?v=1794260777");
+    chainReady ||= loadScript("assets/chain.js?v=1794262913");
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">The chart could not be loaded.</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1373,7 +1379,7 @@
       <div class="map-legend"><h1 class="caps">The Map</h1><p>Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">Where written</button><button type="button" data-layer="story">Places in the story</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794260777");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794262913");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1514,12 +1520,18 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = "The Gallery — The Jesus Archive";
-    if (!window.STORIES) await loadScript("assets/stories.js?v=1794260777").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript("assets/stories.js?v=1794262913").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
+    // An artwork's own address (/gallery/<slug>) opens on that work: its painting and title head the page.
+    const fa = focus && GALLERY.find((a) => a.slug === focus);
+    const artBanner = (a) => banner({ slug: a.slug, title: esc(a.title), lede: `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. One of the works in <a href="/gallery">the gallery</a> of this archive.` });
+    const hallBanner = () => banner({ slug: "school-athens", title: "The Gallery", lede: "The paintings and sculptures that light this archive. Walk along the wall, and choose any painting to hear its story." });
+    // On an artwork's page the header follows the painting being read, so heading and address always agree.
+    const swapBanner = (html) => { if (fa) { const b = $(".banner", view); if (b) b.outerHTML = html; } };
     view.innerHTML = `
-      ${banner({ slug: "school-athens", title: "The Gallery", lede: "The paintings and sculptures that light this archive. Walk along the wall, and choose any painting to hear its story." })}
+      ${fa ? artBanner(fa) : hallBanner()}
       <section class="hallway">
         <div class="wall" id="wall" tabindex="0" role="region" aria-label="The gallery wall">
           ${GALLERY.map((a, i) => `<figure class="hung" data-art="${a.slug}" style="--i:${i}">
@@ -1560,13 +1572,13 @@
       $$(".hung", wall).forEach((h) => h.classList.toggle("sel", h.dataset.art === slug));
       document.title = `${a.title} — The Gallery — The Jesus Archive`;
       lastOpener = wall.querySelector(`[data-open="${CSS.escape(slug)}"]`);
-      if (push) { history.replaceState(null, "", "/gallery/" + slug); $(".drawer-close", drawer).focus({ preventScroll: true }); }
-      // keep the chosen painting in view beside the drawer
+      if (push) { history.replaceState(null, "", "/gallery/" + slug); swapBanner(artBanner(a)); $(".drawer-close", drawer).focus({ preventScroll: true }); }
+      // keep the chosen painting in view beside the drawer (an artwork page sets its own starting position below)
       const hung = lastOpener?.closest(".hung");
-      if (hung && innerWidth > 760) wall.scrollTo({ left: hung.offsetLeft - (wall.clientWidth - drawer.offsetWidth - hung.offsetWidth) / 2, behavior: reduced ? "auto" : "smooth" });
+      if (push && hung && innerWidth > 760) wall.scrollTo({ left: hung.offsetLeft - (wall.clientWidth - drawer.offsetWidth - hung.offsetWidth) / 2, behavior: reduced ? "auto" : "smooth" });
     };
     let lastOpener = null;
-    const closeStory = () => { drawer.classList.remove("on"); drawer.inert = true; $$(".hung", wall).forEach((h) => h.classList.remove("sel")); history.replaceState(null, "", "/gallery"); document.title = "The Gallery — The Jesus Archive"; lastOpener?.focus({ preventScroll: true }); };
+    const closeStory = () => { drawer.classList.remove("on"); drawer.inert = true; $$(".hung", wall).forEach((h) => h.classList.remove("sel")); history.replaceState(null, "", "/gallery"); swapBanner(hallBanner()); document.title = "The Gallery — The Jesus Archive"; lastOpener?.focus({ preventScroll: true }); };
     wall.addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b && !wall.classList.contains("drag")) openStory(b.dataset.open, true); });
     $(".drawer-close", drawer).addEventListener("click", closeStory);
     // clicking anywhere outside the open panel closes it (but not a painting, which swaps the story, or the full-size viewer)
@@ -1576,7 +1588,9 @@
     const esc2 = (e) => { if (e.key === "Escape" && drawer.classList.contains("on") && lb.hidden) closeStory(); if (document.activeElement === wall && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); wall.scrollBy({ left: (e.key === "ArrowRight" ? 1 : -1) * step(), behavior: "smooth" }); } };
     addEventListener("keydown", esc2);
     cleanup.push(() => removeEventListener("keydown", esc2));
-    if (focus) requestAnimationFrame(() => { const h = wall.querySelector(`[data-art="${CSS.escape(focus)}"]`); if (h) { wall.scrollLeft = h.offsetLeft - (wall.clientWidth - h.offsetWidth) / 2; openStory(focus, false); } });
+    // Open the story at once (not a frame later) so it is part of the finished page that crawlers and the prerender see.
+    // Then, once laid out, set the painting in view: beside the open drawer on wide screens, centred on phones.
+    if (fa) { openStory(focus, false); requestAnimationFrame(() => { const h = wall.querySelector(`[data-art="${CSS.escape(focus)}"]`); if (h) wall.scrollLeft = h.offsetLeft - (wall.clientWidth - (innerWidth > 760 ? drawer.offsetWidth : 0) - h.offsetWidth) / 2; }); }
   }
 
   /* ───────── reference hover cards ───────── */
@@ -1629,7 +1643,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794260777").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794262913").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
