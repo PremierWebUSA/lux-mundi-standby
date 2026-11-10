@@ -1447,3 +1447,16 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 
 .ms-credit { color: inherit; font-style: italic; text-decoration: underline; text-decoration-color: rgba(201, 168, 106, .35); text-underline-offset: 3px; transition: color .3s; }
 .ms-credit:hover { color: var(--gold-hi); }
+
+/* ═════════════ About and FAQ pages ═════════════ */
+.page-wrap { grid-template-columns: minmax(0, 1fr); max-width: 900px; margin: 0 auto; }
+.page-prose h2 { margin-top: 1.9em; }
+.page-prose h3 { font-style: normal; font-size: 1.15em; margin: 1.6em 0 .45em; }
+.page-prose .read-on { font-size: .86em; margin-top: -.35em; }
+.page-prose .read-on a { font-family: var(--f-caps); letter-spacing: .04em; }
+.page-prose .src-key { font-family: var(--f-caps); font-size: .6em; letter-spacing: .06em; vertical-align: .4em; padding: 1px 5px; margin: 0 1px; border: 1px solid var(--page-rule); color: var(--page-ink-2); white-space: nowrap; }
+/* review markers: visible only because these are drafts */
+.review-flag { display: inline; background: #fff1a8; color: #4a3b00; font-family: var(--f-body, inherit); font-size: .78em; font-style: normal; padding: 1px 6px; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+/* Direct links to a manuscript (/manuscripts#p52) land below the top bar. */
+.ms { scroll-margin-top: 90px; }
