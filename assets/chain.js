@@ -90,6 +90,20 @@ const E = [
 // People pages that have a figure on the chart.
 const PEOPLE = { jesus: "jesus", peter: "peter", "john-son-of-zebedee": "john", paul: "paul", "clement-of-rome": "clement", "ignatius-of-antioch": "ignatius", papias: "papias", polycarp: "polycarp", "justin-martyr": "justin", tatian: "tatian", irenaeus: "irenaeus", origen: "origen" };
 const GR = { 1: "In the earliest sources", 2: "Student or near-contemporary", 3: "Later tradition or disputed" };
+// Where a thread's quotation can be read on this site (first match wins; no link if the work isn't here).
+const SRC = [
+  [/Church History (\d)\./, (m) => ["1", "3", "4", "5"].includes(m[1]) && [`fathers/eusebius-he-${m[1]}`, `Eusebius, Church History, Book ${m[1]}`]],
+  [/Against Heresies (\d)\./, (m) => ["1", "3"].includes(m[1]) && [`fathers/irenaeus-ah-${m[1]}`, `Irenaeus, Against Heresies, Book ${m[1]}`]],
+  [/1 Corinthians/, () => ["scripture/new-testament/07-1-corinthians", "1 Corinthians"]],
+  [/Galatians/, () => ["scripture/new-testament/09-galatians", "Galatians"]],
+  [/Colossians/, () => ["scripture/new-testament/12-colossians", "Colossians"]],
+  [/Philemon/, () => ["scripture/new-testament/18-philemon", "Philemon"]],
+  [/^Mark /, () => ["scripture/new-testament/02-mark", "the Gospel of Mark"]],
+];
+const sourceOf = (cite) => { for (const [re, f] of SRC) { const m = cite.match(re); if (m) return f(m) || null; } return null; };
+const PAGE_OF = Object.fromEntries(Object.entries(PEOPLE).map(([slug, id]) => [id, slug]));
+const personLink = (id) => PAGE_OF[id] ? `<a class="d-link" href="#/p/${PAGE_OF[id]}">${N[id].name}<span aria-hidden="true"> →</span></a>` : "";
+
 const ERAS = [["The Lord", 6, 40, "c. 30"], ["The Apostles", 40, 90, "30–90"], ["Their Hearers", 90, 140, "90–140"], ["The Next Generation", 140, 195, "140–195"], ["The Third Generation", 195, 250, "195–250"]];
 const CHAINS = [["jesus,john,polycarp,irenaeus", "John to Irenaeus"], ["jesus,peter,mark", "Peter and Mark"], ["jesus,paul,luke,mark", "Paul's circle"], ["peter,paul,clement", "The church at Rome"], ["pantaenus,clementA,origen", "Alexandria"]];
 const NS = "http://www.w3.org/2000/svg";
@@ -117,6 +131,27 @@ function render(view, params, onCleanup) {
   drawer.innerHTML = `<button class="x" type="button" aria-label="Close">×</button><div class="dbody"></div>`;
   document.body.appendChild(drawer);
   const dbody = drawer.querySelector(".dbody");
+  // Touch screens have no hover: the first tap shows the threads (what hovering does with a mouse)
+  // and a small bar to open the details; a second tap on the same thing, or the bar, opens them.
+  const peek = document.createElement("div");
+  peek.className = "chain-peek";
+  peek.innerHTML = `<span class="pk-name"></span><button type="button" class="pk-open">Details</button><button type="button" class="pk-x" aria-label="Clear">×</button>`;
+  document.body.appendChild(peek);
+  let peeked = null, peekOpen = null;
+  const noHover = () => !matchMedia("(hover: hover)").matches;
+  function touchFirst(key, name, show, open) {
+    if (!noHover() || drawer.classList.contains("open")) return false;
+    if (peeked === key) { hidePeek(); return false; }
+    reset(); locked = true; show();
+    peeked = key; peekOpen = open;
+    peek.querySelector(".pk-name").textContent = name;
+    peek.classList.add("on");
+    return true;
+  }
+  function hidePeek() { peeked = null; peekOpen = null; peek.classList.remove("on"); }
+  peek.addEventListener("click", (ev) => ev.stopPropagation());
+  peek.querySelector(".pk-open").addEventListener("click", () => { const f = peekOpen; hidePeek(); f && f(); });
+  peek.querySelector(".pk-x").addEventListener("click", () => reset());
   const svg = view.querySelector(".chain-svg");
   const mq = matchMedia("(max-width: 760px)");
   let locked = false;
@@ -189,7 +224,7 @@ function render(view, params, onCleanup) {
       el("path", { d, class: "vis", id: "chain-p" + i }, g);
       el("path", { d, class: "hit" }, g);
       e.g_el = g;
-      g.addEventListener("click", (ev) => { ev.stopPropagation(); openEdge(i); });
+      g.addEventListener("click", (ev) => { ev.stopPropagation(); if (touchFirst("e" + i, `${N[e.a].name} → ${N[e.b].name}`, () => focus(new Set([e.a, e.b]), new Set([i])), () => openEdge(i))) return; openEdge(i); });
       g.addEventListener("mouseenter", () => { if (!locked) focus(new Set([e.a, e.b]), new Set([i])); });
       g.addEventListener("mouseleave", () => { if (!locked) unfocus(); });
     });
@@ -226,7 +261,7 @@ function render(view, params, onCleanup) {
       const dt = el("text", { y: r + (vert ? 39 : 47) + (lines.length - 1) * 19, x: shift, class: "date" }, g); dt.textContent = n.date;
       labels.push([bg, nm, dt]);
       n.g_el = g;
-      g.addEventListener("click", (ev) => { ev.stopPropagation(); openNode(n.id); });
+      g.addEventListener("click", (ev) => { ev.stopPropagation(); if (touchFirst("n" + n.id, n.name, () => focusLineage(n.id), () => openNode(n.id))) return; openNode(n.id); });
       g.addEventListener("mouseenter", () => { if (!locked) focusLineage(n.id); });
       g.addEventListener("mouseleave", () => { if (!locked) unfocus(); });
     });
@@ -269,7 +304,7 @@ function render(view, params, onCleanup) {
     focus(nodes, edges);
   }
   const chainBtns = () => view.querySelectorAll(".chain-chains button");
-  function reset() { drawer.classList.remove("open"); locked = false; unfocus(); chainBtns().forEach((x) => x.classList.remove("on")); }
+  function reset() { drawer.classList.remove("open"); hidePeek(); locked = false; unfocus(); chainBtns().forEach((x) => x.classList.remove("on")); }
   function openEdge(i) {
     const e = E[i], A = N[e.a], B = N[e.b];
     locked = true; focus(new Set([e.a, e.b]), new Set([i])); e.g_el.classList.add("sel");
@@ -279,7 +314,10 @@ function render(view, params, onCleanup) {
       <span class="grade g${e.g}"><i></i>${GR[e.g]}</span>
       <blockquote>“${e.quote}”<cite>${e.cite}</cite></blockquote>
       <p>${e.text}</p>
-      ${e.note ? `<p class="note">${e.note}</p>` : ""}`;
+      ${e.note ? `<p class="note">${e.note}</p>` : ""}
+      ${(() => { const s = sourceOf(e.cite); const ppl = [personLink(e.a), personLink(e.b)].filter(Boolean);
+        return (s ? `<a class="d-src" href="#/doc/${s[0]}">Read it in ${s[1]}<span aria-hidden="true"> →</span></a>` : "")
+          + (ppl.length ? `<div class="d-people"><span>About them</span>${ppl.join("")}</div>` : ""); })()}`;
     drawer.scrollTop = 0;
     drawer.classList.add("open");
   }
@@ -293,6 +331,7 @@ function render(view, params, onCleanup) {
       <div class="d-title">${n.name}</div>
       <em class="d-date">${n.date}</em>
       <p>${n.bio}</p>
+      ${PAGE_OF[id] ? `<a class="d-src" href="#/p/${PAGE_OF[id]}">Everything on ${n.name}<span aria-hidden="true"> →</span></a>` : ""}
       <ul class="links">${rel.map(([e, i]) => { const o = N[e.a === id ? e.b : e.a]; return `<li><button type="button" data-i="${i}"><span>${e.a === id ? "→ " : "← "}${o.name}</span><small>${GR[e.g]}</small></button></li>`; }).join("")}</ul>`;
     dbody.querySelectorAll("[data-i]").forEach((b) => b.addEventListener("click", () => openEdge(+b.dataset.i)));
     drawer.scrollTop = 0;
@@ -321,7 +360,7 @@ function render(view, params, onCleanup) {
   let t = null;
   if (want) t = setTimeout(() => { openNode(want); N[want].g_el.closest("g").parentNode && view.querySelector(".chain-stage")?.scrollIntoView({ block: "center", behavior: "smooth" }); }, 1100);
 
-  onCleanup(() => { clearTimeout(t); offs.forEach((f) => f()); drawer.remove(); });
+  onCleanup(() => { clearTimeout(t); offs.forEach((f) => f()); drawer.remove(); peek.remove(); });
 }
 
 LUX.chain = { render, PEOPLE };
