@@ -30,7 +30,7 @@ window.PATH = {
     },
     {
       doc: "witnesses/josephus-antiquities-20", date: "c. AD 93", plate: "jos-cologne", p: 0, title: "His brother James",
-      bridge: "In a second, <em>undisputed passage</em>, Josephus records the illegal execution of James in AD 62, and identifies him in passing as “the brother of Jesus who was called Christ.” That he mentions Jesus without explanation suggests his readers already knew whom he meant."
+      bridge: "In a second passage, <em>accepted as genuine by nearly all scholars</em>, Josephus records the illegal execution of James in AD 62, and identifies him in passing as “the brother of Jesus who was called Christ.” That he mentions Jesus without explanation suggests his readers already knew whom he meant."
     },
     {
       doc: "legal/pliny-trajan-letters-10-96-97", date: "c. AD 112", plate: "pliny-ms", p: 0, title: "A Roman governor’s report",
