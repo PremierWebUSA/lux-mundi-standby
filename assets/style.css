@@ -1344,6 +1344,31 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .search-trigger { width: 38px; height: 38px; padding: 0; justify-content: center; }
 .search-trigger span, .search-trigger kbd { display: none; }
 
+/* The language menu: a globe and the current language's code; the menu names every language in its own words. */
+.lang-menu { position: relative; display: flex; flex: none; }
+.lang-btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px 0 10px; background: rgba(255, 240, 200, .04); border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; color: var(--text-2); transition: border-color .3s, background .3s, color .3s, box-shadow .4s; }
+.lang-btn svg { width: 17px; height: 17px; }
+.lang-code { font-family: var(--f-caps); font-size: 12px; font-weight: 600; letter-spacing: .14em; }
+.lang-btn:hover, .lang-menu.open .lang-btn { border-color: var(--gold); color: var(--gold-hi); background: rgba(212, 176, 102, .08); box-shadow: 0 0 30px -8px rgba(212, 176, 102, .5); }
+.lang-drop { position: absolute; top: calc(100% + 12px); right: 0; min-width: 220px; display: grid; padding: 8px; background: rgba(18, 14, 10, .97); border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 30px 70px -20px #000, 0 0 0 1px rgba(0, 0, 0, .4); backdrop-filter: blur(14px); opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s .3s; z-index: 60; }
+.lang-menu.open .lang-drop { opacity: 1; visibility: visible; transform: none; transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s; }
+.lang-item { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; padding: 9px 14px; border-radius: 8px; font-family: var(--f-body); font-size: 19px; color: var(--text); text-decoration: none; transition: background .25s, color .25s; }
+.lang-item:hover { background: rgba(212, 176, 102, .1); color: var(--gold-hi); }
+.lang-item.on { color: var(--gold-hi); }
+.lang-item i { font-style: normal; font-size: 14px; color: var(--gold); }
+.lang-item small, .footer-lang-item small { font-family: var(--f-caps); font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+@media (max-width: 560px) { .lang-btn { width: 38px; padding: 0; justify-content: center; } .lang-code { display: none; } }
+@media (max-width: 1120px) { .lang-menu { margin-left: auto; } .lang-menu ~ .search-trigger { margin-left: 0; } }
+/* The same choice, quietly, at the foot of every page. */
+.footer-lang { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; margin: 26px auto 0; color: var(--text-3); }
+.footer-lang svg { width: 16px; height: 16px; }
+.footer-lang .caps { font-size: 12px; letter-spacing: .2em; }
+.footer-lang-links { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; }
+.footer-lang-item { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; color: var(--text-2); text-decoration: none; font-size: 17px; transition: color .25s, background .25s; }
+.footer-lang-item:hover { color: var(--gold-hi); background: rgba(212, 176, 102, .08); }
+.footer-lang-item.on { color: var(--gold-hi); }
+.footer-lang-item i { display: none; }
+
 /* ═════════════ The Chain of Witnesses (/chain, drawn by assets/chain.js) ═════════════ */
 .chain-page { --text: #f4ecda; --text-2: #d9cbae; --text-3: #c2b293; --g1: #f2dca1; --g2: #dcb96f; --g3: #b8a785; padding-top: 110px; background: radial-gradient(ellipse 80% 60% at 50% 40%, #1c1610 0%, var(--ink) 70%); }
 .chain-head { text-align: center; padding: 20px 24px 8px; }
@@ -1524,3 +1549,6 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
   .chain-drawer::before { inset: 0 0 auto 0; width: auto; height: 4px; border-radius: 18px 18px 0 0; }
   .chain-drawer .d-title { font-size: 32px; }
 }
+
+/* Spanish pages: a link to a page not yet translated says so. */
+.lang-note { font-family: var(--f-caps); font-size: .62em; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; vertical-align: .15em; margin-left: .35em; }

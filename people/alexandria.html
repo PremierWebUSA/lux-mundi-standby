@@ -6,8 +6,13 @@
 <title>Alexandria | The Jesus Archive</title>
 <meta name="description" content="The great Greek city of Egypt, a centre of learning and of a large Jewish community. Its Christian catechetical teachers included Clement and Origen, and the Secret Mark letter claims Mark wrote a…">
 <link rel="canonical" href="https://thejesusarchive.com/people/alexandria">
+<link rel="alternate" hreflang="en" href="https://thejesusarchive.com/people/alexandria">
+<link rel="alternate" hreflang="es" href="https://thejesusarchive.com/es/people/alexandria">
+<link rel="alternate" hreflang="x-default" href="https://thejesusarchive.com/people/alexandria">
 <meta property="og:site_name" content="The Jesus Archive">
 <meta property="og:type" content="article">
+<meta property="og:locale" content="en_GB">
+<meta property="og:locale:alternate" content="es_419">
 <meta property="og:title" content="Alexandria | The Jesus Archive">
 <meta property="og:description" content="The great Greek city of Egypt, a centre of learning and of a large Jewish community. Its Christian catechetical teachers included Clement and Origen, and the Secret Mark letter claims Mark wrote a…">
 <meta property="og:url" content="https://thejesusarchive.com/people/alexandria">
@@ -26,10 +31,10 @@
 <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/icons/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=1794473144">
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=1794516851">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/EBGaramond-normal-1a4b1370.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/CormorantGaramond-italic-b0fa095e.woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css?v=1794473144">
+<link rel="stylesheet" href="assets/style.css?v=1794516851">
 
 </head>
 <body>
@@ -64,6 +69,13 @@
       </div>
     </div>
   </nav>
+  <div class="lang-menu" id="langMenu">
+    <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="langDrop" aria-label="Language: English">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3.6 12h16.8M12 3.4c2.4 2.5 3.6 5.4 3.6 8.6s-1.2 6.1-3.6 8.6M12 3.4C9.6 5.9 8.4 8.8 8.4 12s1.2 6.1 3.6 8.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span class="lang-code">EN</span>
+    </button>
+    <div class="lang-drop" id="langDrop" role="menu"></div>
+  </div>
   <button class="search-trigger" id="openSearch" type="button" aria-label="Search the archive">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
     <span>Search</span>
@@ -102,6 +114,7 @@
       <nav class="footer-nav"><a href="/old-testament">The Prophets</a><a href="/new-testament">The New Testament</a><a href="/witnesses">Witnesses Outside the Church</a><a href="/fathers">The Early Church</a><a href="/archaeology">Stones and Scrolls</a><a href="/other-gospels">The Other Gospels</a><a href="/traditions">Other Voices</a><a href="/dossier">The Dossier</a><a href="/sources">Sources</a><a href="/timeline">Timeline</a><a href="/gallery">Gallery</a><a href="/about">About</a><a href="/faq">FAQ</a></nav>
       <nav class="footer-nav"><a href="/life">The Life of Christ</a><a href="/prophecies">Prophecy and Fulfilment</a><a href="/resurrection">The Resurrection</a><a href="/manuscripts">How the Text Survived</a></nav>
       <div class="caps soli"><span class="latin " data-en="Behold the Truth" aria-label="Ecce Veritas (Behold the Truth)" title=""><span class="morph-text" aria-hidden="true">Ecce Veritas</span></span></div>
+      <nav class="footer-lang" aria-label="Language"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.4"></circle><path d="M3.6 12h16.8M12 3.4c2.4 2.5 3.6 5.4 3.6 8.6s-1.2 6.1-3.6 8.6M12 3.4C9.6 5.9 8.4 8.8 8.4 12s1.2 6.1 3.6 8.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg><span class="caps">Language:</span><span class="footer-lang-links"><a class="footer-lang-item on" href="/people/alexandria" hreflang="en" lang="en" role="menuitem" aria-current="true"><span>English</span><i aria-hidden="true">✓</i></a><a class="footer-lang-item" href="/es/people/alexandria" hreflang="es" lang="es" role="menuitem"><span>Español</span></a></span></nav>
       <p class="footer-licence">The archive’s own writing may be freely shared and adapted under <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" target="_blank">CC BY 4.0</a>, with credit to The Jesus Archive. Quoted translations and images keep their own licences, given with each one.</p>
     </footer></main>
 
@@ -131,9 +144,10 @@
 <div class="cursor-light" id="cLight" aria-hidden="true"></div>
 <div class="cursor" id="cursor" aria-hidden="true"><i class="c-ring"></i><i class="c-star"></i></div>
 
-<script src="assets/art.js?v=1794473144"></script>
-<script src="assets/path.js?v=1794473144"></script>
-<script src="assets/app.js?v=1794473144"></script>
-<script src="assets/cursor.js?v=1794473144"></script>
+<script src="assets/i18n.js?v=1794516851"></script>
+<script src="assets/art.js?v=1794516851"></script>
+<script src="assets/path.js?v=1794516851"></script>
+<script src="assets/app.js?v=1794516851"></script>
+<script src="assets/cursor.js?v=1794516851"></script>
 </body>
 </html>

@@ -9,6 +9,19 @@
 (() => {
   "use strict";
 
+  /* ───────── language: pages under /es/ are Spanish (assets/i18n.js) ───────── */
+  const ES = window.LANG === "es", tr = window.t || ((x) => x);
+  const LOCALE = ES ? "es-419" : "en-US";
+  // Pages that exist in Spanish (from data-js/index.js); filled in prep().
+  let ES_PAGES = new Set(), ES_INDEX = null;
+  const isEs = (u) => /^\/es(\/|$|\?)/.test(u);
+  // An English address, turned into its Spanish twin when this is a Spanish page and the twin exists.
+  const loc = (u) => {
+    if (!ES || !u.startsWith("/") || isEs(u)) return u;
+    const i = u.search(/[?#]/), path = i < 0 ? u : u.slice(0, i), rest = i < 0 ? "" : u.slice(i);
+    return ES_PAGES.has(path) ? (path === "/" ? "/es/" : "/es" + path) + rest : u;
+  };
+
   /* ───────── data (loaded as scripts so the site works from file://) ───────── */
   const LUX = (window.LUX = { docs: {}, waiting: {} });
   let INDEX = null, SEARCH = null;
@@ -21,11 +34,13 @@
   LUX.studies = (d) => (STUDIES = d);
   let NOTES = null;
   LUX.notes = (d) => (NOTES = d);
+  LUX.esIndex = (d) => (ES_INDEX = d);
   LUX.glossary = (d) => {
     GLOSS = d;
     d.forEach((g, i) => g.match.forEach((m) => (glossAt[m.toLowerCase()] ??= i)));
     const forms = Object.keys(glossAt).sort((a, b) => b.length - a.length);
-    glossRe = new RegExp(`\\b(${forms.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`, "gi");
+    // word edges that also work for accented letters (códice, guemará)
+    glossRe = new RegExp(`(?<![\\p{L}\\p{N}])(${forms.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?![\\p{L}\\p{N}])`, "giu");
   };
   LUX.pages = (p) => { window.PAGES = p; };
   LUX.doc = (id, d) => { LUX.docs[id] = d; (LUX.waiting[id] || []).forEach((f) => f(d)); delete LUX.waiting[id]; };
@@ -34,15 +49,16 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794473144");
+  const indexReady = loadScript("data-js/index.js?v=1794516851").then(() => ES && loadScript("data-js/es/index.js?v=1794516851").catch(() => {}));
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
-  indexReady.then(() => loadScript("data-js/glossary.js?v=1794473144")).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794473144"));
+  // (the glossary explains English terms, so Spanish pages go without it for now)
+  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794516851`)).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794516851`));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794473144").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794516851`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794473144").catch(rej);
+    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794516851").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
@@ -63,6 +79,29 @@
     (INDEX.people || []).forEach((e) => (ENT[e.slug] = Object.assign(e, { kind: "person" })));
     (INDEX.places || []).forEach((e) => (ENT[e.slug] = Object.assign(e, { kind: "place" })));
     Object.values(ENT).forEach((e) => (e.mentions || []).forEach(([d, n]) => (IN_DOC[d] ||= []).push([e.slug, n])));
+    ES_PAGES = new Set(INDEX.es || []);
+    if (ES && ES_INDEX) {
+      // Spanish titles, dates and section names over the English index (data-js/es/index.js).
+      for (const [id, c] of Object.entries(ES_INDEX.cards || {})) if (CARDS[id]) Object.assign(CARDS[id], c);
+      INDEX.sections.forEach((s) => {
+        const x = ES_INDEX.sections?.[s.id];
+        if (!x) return;
+        Object.assign(s, { title: x.title, kicker: x.kicker, lede: x.lede });
+        s.groups.forEach((g, i) => x.groups?.[i] && (g.title = x.groups[i]));
+      });
+      if (ES_INDEX.path) {
+        const { stops = [], ...head } = ES_INDEX.path;
+        Object.assign(window.PATH, head);
+        // Each stop keeps its document and painting; the Spanish brings its words and, where there is one, a Spanish passage.
+        window.PATH.stops.forEach((s, i) => { if (!stops[i]) return; const { passage, ...rest } = stops[i]; Object.assign(s, rest, passage ? { esPassage: passage } : {}); });
+      }
+      (ES_INDEX.facts || []).forEach((f, i) => COMPARE_FACTS[i] && COMPARE_FACTS[i].splice(0, 2, ...f));
+      // People and places, and the works of art, in Spanish (names, roles, regions, biographies, titles, verses).
+      for (const k of ["people", "places"]) for (const e of INDEX[k] || []) Object.assign(e, ES_INDEX[k]?.[e.slug] || {});
+      for (const a of [...ART, ...(INDEX.extraArt || [])]) Object.assign(a, ES_INDEX.art?.[a.slug] || {});
+    }
+    // Header links go to the Spanish page where there is one; the language switch shows when there is a twin.
+    $$("#bar a[href^='/']").forEach((a) => a.setAttribute("href", loc(a.getAttribute("href"))));
   }
 
   /* ───────── helpers ───────── */
@@ -71,9 +110,9 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const ART = window.ART || [];
   const ARTS = Object.fromEntries(ART.map((a) => [a.slug, a]));
-  const fmt = (n) => Number(n).toLocaleString("en-US");
+  const fmt = (n) => Number(n).toLocaleString(LOCALE);
   const roman = (n) => { let r = ""; for (const [v, s] of [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]) while (n >= v) (r += s), (n -= v); return r; };
-  const yearText = (y) => (y == null ? "" : y < 0 ? `${-y} BC` : y < 1000 ? `AD ${y}` : String(y));
+  const yearText = (y) => (y == null ? "" : y < 0 ? (ES ? `${-y} a. C.` : `${-y} BC`) : y < 1000 ? (ES ? `${y} d. C.` : `AD ${y}`) : String(y));
   const minutes = (w) => Math.max(1, Math.round(w / 230));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = $("#view"), bar = $("#bar");
@@ -118,11 +157,12 @@
   const footer = () => `<footer class="footer">
       ${plate("ghent-lamb", false, "70vw")}
       <div class="ornament">${CROSS}</div>
-      <blockquote>“There are also many other things which Jesus did, which if they would all be written, I suppose that even the world itself wouldn’t have room for the books that would be written.”<cite class="caps">John 21 · 25</cite></blockquote>
-      <nav class="footer-nav">${INDEX.sections.map((s) => `<a href="#/s/${s.id}">${esc(s.title)}</a>`).join("")}<a href="#/timeline">Timeline</a><a href="#/gallery">Gallery</a><a href="#/about">About</a><a href="#/faq">FAQ</a></nav>
+      <blockquote>“${tr("There are also many other things which Jesus did, which if they would all be written, I suppose that even the world itself wouldn’t have room for the books that would be written.")}”<cite class="caps">${tr("John 21 · 25")}</cite></blockquote>
+      <nav class="footer-nav">${INDEX.sections.map((s) => `<a href="#/s/${s.id}">${esc(s.title)}</a>`).join("")}<a href="#/timeline">${tr("Timeline")}</a><a href="#/gallery">${tr("Gallery")}</a><a href="#/about">${tr("About")}</a><a href="#/faq">${tr("FAQ")}</a></nav>
       <nav class="footer-nav">${Object.entries(STUDY).map(([k, t]) => `<a href="#/${k}">${esc(t.title)}</a>`).join("")}</nav>
-      <div class="caps soli">${latin("Ecce Veritas", "Behold the Truth")}</div>
-      <p class="footer-licence">The archive's own writing may be freely shared and adapted under <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" target="_blank">CC BY 4.0</a>, with credit to The Jesus Archive. Quoted translations and images keep their own licences, given with each one.</p>
+      <div class="caps soli">${latin("Ecce Veritas", tr("Behold the Truth"))}</div>
+      <nav class="footer-lang" aria-label="${tr("Language")}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3.6 12h16.8M12 3.4c2.4 2.5 3.6 5.4 3.6 8.6s-1.2 6.1-3.6 8.6M12 3.4C9.6 5.9 8.4 8.8 8.4 12s1.2 6.1 3.6 8.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span class="caps">${tr("Language:")}</span><span class="footer-lang-links">${langLinks("footer-lang-item")}</span></nav>
+      <p class="footer-licence">${ES ? tr("footer-licence") + " " + tr("Scripture quoted in Spanish from the Reina-Valera 1909 (public domain).") : `The archive's own writing may be freely shared and adapted under <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" target="_blank">CC BY 4.0</a>, with credit to The Jesus Archive. Quoted translations and images keep their own licences, given with each one.`}</p>
     </footer>`;
 
   /* ───────── router & page transitions ───────── */
@@ -137,7 +177,8 @@
   const LEGACY = { scripture: "new-testament", gospels: "other-gospels", legal: "witnesses", denominational: "traditions", registry: "other-gospels", citations: "sources" };
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   const SPECIAL = new Set(["path", "timeline", "map", "gallery", "compare", "people", "life", "prophecies", "resurrection", "manuscripts", "chain", "about", "faq"]);
-  function toPath(h) {
+  const toPath = (h) => loc(rawPath(h));
+  function rawPath(h) {
     const [route, query] = h.replace(/^#\/?/, "").split("?");
     const parts = route.split("/").filter(Boolean);
     const q = query ? "?" + query : "";
@@ -153,7 +194,7 @@
   // The current address, read back into the internal route form: { parts: [kind, ...rest], params }.
   function parseHash() {
     const params = new URLSearchParams(location.search);
-    const parts = location.pathname.split("/").filter(Boolean).map(decodeURIComponent);
+    const parts = (ES ? location.pathname.replace(/^\/es(?=\/|$)/, "") : location.pathname).split("/").filter(Boolean).map(decodeURIComponent);
     if (!parts.length) return { parts: [], params };
     // section names are matched case-insensitively (/Life, /PATH/1); document ids keep their case (citations/R49)
     const first = parts[0].toLowerCase(), rest = parts.slice(1);
@@ -164,8 +205,10 @@
   }
   const routeKey = () => location.pathname + location.search;
   function go(h, replace) {
-    const url = h.startsWith("#") ? toPath(h) : h;
+    const url = h.startsWith("#") ? toPath(h) : loc(h);
     if (url === routeKey()) return;
+    // The other language is a different page load (its own interface strings and data).
+    if (isEs(url) !== ES) { location.href = url; return; }
     history[replace ? "replaceState" : "pushState"](null, "", url);
     navigate();
   }
@@ -209,8 +252,9 @@
 
     if (keptPlate) { const fresh = $(".banner .plate img, .doc-head .plate img", view); if (fresh && fresh.getAttribute("src") === keptPlate.getAttribute("src")) fresh.replaceWith(keptPlate); }
 
-    const top = "/" + (kind === "p" ? "people" : SPECIAL.has(kind) ? kind : "");
-    $$(".bar-nav a").forEach((a) => a.classList.toggle("on", top !== "/" && a.getAttribute("href") === top));
+    const top = loc("/" + (kind === "p" ? "people" : SPECIAL.has(kind) ? kind : ""));
+    $$(".bar-nav a").forEach((a) => a.classList.toggle("on", !/^\/(es\/?)?$/.test(top) && a.getAttribute("href") === top));
+    langSwitch();
     $(".nav-more-btn")?.classList.toggle("on", !!$(".nav-drop a.on"));
     const named = $(".banner .plate, .doc-head .plate");
     // (the chain page draws its own header)
@@ -243,6 +287,34 @@
     onScroll();
     document.documentElement.dataset.rendered = currentHash;
   }
+
+  // The language menu: every language, named in its own words; each goes to this same page in that language,
+  // or to that language's home page when this page is not translated yet.
+  const LANGS = window.LANGS || [{ code: "en", name: "English", prefix: "", home: "Home page" }];
+  const CUR = LANGS.find((l) => l.code === (ES ? "es" : "en")) || LANGS[0];
+  const enPath = () => (ES ? location.pathname.replace(/^\/es(?=\/|$)/, "") : location.pathname) || "/";
+  const twinOf = (l) => {
+    const en = enPath();
+    if (!l.prefix) return { href: en + location.search, here: true };
+    const has = en === "/" || (INDEX?.[l.code] || []).includes(en);
+    return has ? { href: (en === "/" ? l.prefix + "/" : l.prefix + en) + location.search, here: true } : { href: l.prefix + "/", here: false };
+  };
+  const langLinks = (cls) => LANGS.map((l) => {
+    const t = twinOf(l), cur = l === CUR;
+    return `<a class="${cls}${cur ? " on" : ""}" href="${esc(t.href)}" hreflang="${l.code}" lang="${l.code}" role="menuitem"${cur ? ' aria-current="true"' : ""}><span>${esc(l.name)}</span>${!t.here ? `<small>${esc(l.home)}</small>` : cur ? `<i aria-hidden="true">✓</i>` : ""}</a>`;
+  }).join("");
+  function langSwitch() {
+    const drop = $("#langDrop");
+    if (drop) drop.innerHTML = langLinks("lang-item");
+    $(".lang-code") && ($(".lang-code").textContent = CUR.code.toUpperCase());
+    $(".lang-btn")?.setAttribute("aria-label", `${tr("Language")}: ${CUR.name}`);
+    $(".footer-lang-links") && ($(".footer-lang-links").innerHTML = langLinks("footer-lang-item"));
+  }
+  const langMenu = $("#langMenu"), langBtn = $(".lang-btn");
+  const setLang = (on) => { langMenu?.classList.toggle("open", on); langBtn?.setAttribute("aria-expanded", on); };
+  langBtn?.addEventListener("click", (e) => { e.stopPropagation(); setLang(!langMenu.classList.contains("open")); });
+  document.addEventListener("click", (e) => { if (langMenu && !langMenu.contains(e.target)) setLang(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langMenu?.classList.contains("open")) { setLang(false); langBtn.focus(); } });
 
   let pendingScroll = null, restoring = false;
   function navigate() {
@@ -279,7 +351,8 @@
   document.addEventListener("click", (e) => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const a = e.target.closest("a[href]");
-    if (!a || a.target === "_blank" || a.hasAttribute("download") || a.closest("[data-scroll]")) return;
+    // (the EN | ES switch is an ordinary page load, never rewritten to the current language)
+    if (!a || a.target === "_blank" || a.hasAttribute("download") || a.closest("[data-scroll]") || a.closest(".lang-menu, .footer-lang")) return;
     const href = a.getAttribute("href");
     if (href.startsWith("#/")) { e.preventDefault(); go(href); return; }
     if (href.startsWith("#")) {
@@ -527,20 +600,24 @@
     e.preventDefault();
     const now = new Date();
     const month = (d) => ["Jan.", "Feb.", "Mar.", "Apr.", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."][d.getMonth()];
-    const long = now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const long = now.toLocaleDateString(LOCALE, { year: "numeric", month: "long", day: "numeric" });
     const url = SITE + citeInfo.path;
     const t = esc(citeInfo.title);
-    const styles = [
+    const styles = ES ? [
+      ["Chicago", `“${t}.” The Jesus Archive. Consultado el ${long}. ${url}.`],
+      ["MLA", `“${t}.” <i>The Jesus Archive</i>, ${url.replace(/^https:\/\//, "")}. Consultado el ${long}.`],
+      ["APA", `The Jesus Archive. (s. f.). <i>${t}</i>. Recuperado el ${long}, de ${url}`],
+    ] : [
       ["Chicago", `“${t}.” The Jesus Archive. Accessed ${long}. ${url}.`],
       ["MLA", `“${t}.” <i>The Jesus Archive</i>, ${url.replace(/^https:\/\//, "")}. Accessed ${now.getDate()} ${month(now)} ${now.getFullYear()}.`],
       ["APA", `The Jesus Archive. (n.d.). <i>${t}</i>. Retrieved ${long}, from ${url}`],
     ];
-    const src = citeInfo.source?.name ? `<p class="cite-src"><b class="caps">Original source</b>${esc(citeInfo.source.name)}${citeInfo.source.url ? `, ${esc(citeInfo.source.url)}` : ""}</p>` : "";
+    const src = citeInfo.source?.name ? `<p class="cite-src"><b class="caps">${tr("Original source")}</b>${esc(citeInfo.source.name)}${citeInfo.source.url ? `, ${esc(citeInfo.source.url)}` : ""}</p>` : "";
     const pop = document.createElement("div");
     pop.className = "cite-pop";
     pop.setAttribute("role", "dialog");
-    pop.setAttribute("aria-label", "Cite this page");
-    pop.innerHTML = `<div class="cite-head"><b class="caps">Cite this page</b><button type="button" class="cite-close" aria-label="Close"><svg class="x-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></button></div>${styles.map(([k, v]) => `<div class="cite-row"><span class="caps">${k}</span><p>${v}</p><button type="button" class="cite-copy" aria-label="Copy ${k} citation">Copy</button></div>`).join("")}${src}`;
+    pop.setAttribute("aria-label", tr("Cite this page"));
+    pop.innerHTML = `<div class="cite-head"><b class="caps">${tr("Cite this page")}</b><button type="button" class="cite-close" aria-label="${tr("Close")}"><svg class="x-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></button></div>${styles.map(([k, v]) => `<div class="cite-row"><span class="caps">${k}</span><p>${v}</p><button type="button" class="cite-copy" aria-label="Copy ${k} citation">Copy</button></div>`).join("")}${src}`;
     document.body.append(pop);   // outside the page header, so nothing on the page can paint over it
     cleanup.push(() => closeCite());
     const r = btn.getBoundingClientRect();
@@ -553,7 +630,7 @@
       if (ev.target.closest(".cite-close")) return closeCite(true);
       const b = ev.target.closest(".cite-copy");
       if (!b) return;
-      navigator.clipboard?.writeText(b.previousElementSibling.textContent).then(() => { b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1600); });
+      navigator.clipboard?.writeText(b.previousElementSibling.textContent).then(() => { b.textContent = tr("Copied"); setTimeout(() => (b.textContent = tr("Copy")), 1600); });
     });
   });
   addEventListener("keydown", (e) => e.key === "Escape" && $(".cite-pop") && closeCite(true));
@@ -575,17 +652,17 @@
   const HALL_FACTS = { "new-testament": [COMPARE_FACTS[0], COMPARE_FACTS[1]], witnesses: [COMPARE_FACTS[2]] };
   // The seven halls on the home page, in three rows. The Dossier is the research behind them, linked beneath.
   const HALL_ROWS = [
-    ["Scripture", ["old-testament", "new-testament"]],
-    ["Witnesses", ["witnesses", "fathers", "archaeology"]],
-    ["Other accounts", ["other-gospels", "traditions"]],
+    [tr("Scripture"), ["old-testament", "new-testament"]],
+    [tr("Witnesses"), ["witnesses", "fathers", "archaeology"]],
+    [tr("Other accounts"), ["other-gospels", "traditions"]],
   ];
   const ERAS = [
-    [-9999, 1, "Before his birth", "The prophets, and the scrolls that preserved them"],
-    [1, 100, "The apostolic age", "The lifetime of those who knew him"],
-    [100, 200, "The second century", "The Fathers, the apologists and the first critics"],
-    [200, 400, "Persecution and peace", "From the house-churches to the councils"],
-    [400, 1900, "The long memory", "Late antiquity, Islam and the Middle Ages"],
-    [1900, 9999, "Our own time", "The churches, and modern science, speak"],
+    [-9999, 1, tr("Before his birth"), tr("The prophets, and the scrolls that preserved them")],
+    [1, 100, tr("The apostolic age"), tr("The lifetime of those who knew him")],
+    [100, 200, tr("The second century"), tr("The Fathers, the apologists and the first critics")],
+    [200, 400, tr("Persecution and peace"), tr("From the house-churches to the councils")],
+    [400, 1900, tr("The long memory"), tr("Late antiquity, Islam and the Middle Ages")],
+    [1900, 9999, tr("Our own time"), tr("The churches, and modern science, speak")],
   ];
   const timelineDocs = () => Object.values(CARDS)
     .filter((c) => c.year != null && c.kind !== "research" && c.kind !== "source")
@@ -600,7 +677,7 @@
     return need <= 1400 ? "md/creation-of-adam.webp" : need <= 2400 ? "lg/creation-of-adam.webp" : "creation-of-adam.webp";
   };
   function renderHome() {
-    document.title = "The Jesus Archive | The Greatest Story Ever Told";
+    document.title = `The Jesus Archive | ${tr("The Greatest Story Ever Told")}`;
     const total = Object.values(CARDS).filter((c) => c.section !== "sources").length;
     const items = timelineDocs();
     let era = -1;
@@ -610,16 +687,16 @@
       if (e !== era) { era = e; pre = `<div class="era-tick"><span>${esc(ERAS[e][2])}</span></div>`; }
       return `${pre}<a class="tick" href="#/doc/${c.id}" style="${accent(c.section)}"><span class="tick-year">${esc(yearText(c.year))}</span><b>${esc(c.short)}</b><small>${esc(c.title)}</small></a>`;
     }).join("");
-    const title = "The Greatest Story Ever Told";
+    const title = tr("The Greatest Story Ever Told");
     view.innerHTML = `
       <section class="hero" aria-label="The Jesus Archive">
-        <div class="hero-art"><img id="heroImg" src="art/${heroFile()}" fetchpriority="high" alt="Michelangelo’s Creation of Adam: the hand of God reaching toward Adam"></div>
+        <div class="hero-art"><img id="heroImg" src="art/${heroFile()}" fetchpriority="high" alt="${tr("Michelangelo’s Creation of Adam: the hand of God reaching toward Adam")}"></div>
         <div class="hero-veil"></div>
         <canvas id="motes" aria-hidden="true"></canvas>
         <div class="spark" aria-hidden="true"></div>
         <div class="hero-copy">
           <h1 class="hero-title" id="heroTitle" aria-label="${title}">${title.split(" ").map((word, w, all) => `<span class="word">${[...word].map((ch, k) => `<span class="ch gilt" style="--i:${all.slice(0, w).join(" ").length + (w ? 1 : 0) + k}" aria-hidden="true">${ch}</span>`).join("")}</span>`).join(" ")}</h1>
-          <p class="hero-sub">and the most closely examined. Here is every witness that survives, in their own words.</p>
+          <p class="hero-sub">${tr("and the most closely examined. Here is every witness that survives, in their own words.")}</p>
         </div>
         ${credit("creation-of-adam", "hero-credit")}
         <div class="scroll-cue" aria-hidden="true"></div>
@@ -628,16 +705,16 @@
       <section class="section" id="begin">
         <header class="section-head reveal">
           <div class="ornament">${CROSS}</div>
-          <h2 class="section-title">“That you might know <em>the certainty</em>”</h2>
+          ${ES ? "" : `<h2 class="section-title">“That you might know <em>the certainty</em>”</h2>`}
         </header>
         <a class="path-cta glow reveal" href="#/path">
           ${plate("emmaus", false, "(max-width: 860px) 62vw, 1240px")}
-          <span class="caps">New here? Begin with the guided path</span>
+          <span class="caps">${tr("New here? Begin with the guided path")}</span>
           <b>${esc(window.PATH.title)}</b>
           <span class="path-cta-lede">${esc(window.PATH.lede)}</span>
-          <span class="link-gold">Begin <span class="arrow">→</span></span>
+          <span class="link-gold">${tr("Begin")} <span class="arrow">→</span></span>
         </a>
-        <span class="caps studies-label reveal">Or begin with a study</span>
+        <span class="caps studies-label reveal">${tr("Or begin with a study")}</span>
         <div class="studies home-studies">${Object.entries(STUDY).map(([k, t], i) => `<a class="study glow reveal" href="#/${k}" style="--d:${i * 0.08}s">
           ${plate(t.card, false, "(max-width: 640px) 90vw, (max-width: 1100px) 45vw, 300px")}
           <span class="caps">${esc(t.kicker)}</span><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div>
@@ -647,15 +724,15 @@
       <section class="section" id="testimony" style="padding-top:0">
         <header class="section-head reveal">
           
-          <span class="caps">The testimony</span>
-          <h2 class="section-title">Seven <em>halls</em> of witness</h2>
-          <p class="section-lede">Each hall holds one kind of witness. The writings in each are arranged in the order in which they were written.</p>
+          <span class="caps">${tr("The testimony")}</span>
+          <h2 class="section-title">${tr("Seven <em>halls</em> of witness")}</h2>
+          <p class="section-lede">${tr("Each hall holds one kind of witness. The writings in each are arranged in the order in which they were written.")}</p>
         </header>
         ${HALL_ROWS.map(([label, ids]) => `<div class="hall-row reveal"><span class="caps hall-row-label">${label}</span><div class="hall-tiles" style="--cols:${ids.length}">${ids.map((id) => SECTIONS[id]).filter(Boolean).map((s) => {
           const n = ORDER[s.id].length;
           return `<a class="hall-tile glow" href="#/s/${s.id}" style="${accent(s.id)}">${plate(s.plate, false, "(max-width: 640px) 90vw, (max-width: 1100px) 45vw, 480px")}
             <span class="caps hall-kicker">${esc(s.kicker)}</span><h3>${esc(s.title)}</h3>
-            <span class="hall-meta"><span class="hall-count">${n} ${n === 1 ? "writing" : "writings"}</span><span class="link-gold">Enter <span class="arrow">→</span></span></span></a>`;
+            <span class="hall-meta"><span class="hall-count">${n} ${tr(n === 1 ? "writing" : "writings")}</span><span class="link-gold">${tr("Enter")} <span class="arrow">→</span></span></span></a>`;
         }).join("")}</div></div>`).join("")}
       </section>
 
@@ -663,12 +740,12 @@
       <section class="section" id="centuries" style="padding-top:0">
         <header class="section-head reveal">
           
-          <span class="caps">Through the centuries</span>
-          <h2 class="section-title">Two thousand <em>years</em></h2>
-          <p class="section-lede">From the Isaiah scroll copied before his birth to statements issued in our own decade. Drag through the years.</p>
+          <span class="caps">${tr("Through the centuries")}</span>
+          <h2 class="section-title">${tr("Two thousand <em>years</em>")}</h2>
+          <p class="section-lede">${tr("From the Isaiah scroll copied before his birth to statements issued in our own decade. Drag through the years.")}</p>
         </header>
         <div class="ribbon-wrap reveal"><div class="ribbon" id="ribbon">${ribbon}</div></div>
-        <p class="center reveal"><a class="link-gold" href="#/timeline">The full timeline <span class="arrow">→</span></a></p>
+        <p class="center reveal"><a class="link-gold" href="#/timeline">${tr("The full timeline")} <span class="arrow">→</span></a></p>
       </section>
 
       ${FLOURISH}
@@ -676,13 +753,13 @@
         <div class="invite">
           <div class="fan reveal">${["annunciation", "calling-matthew", "salvator-mundi", "emmaus", "pieta"].map((s, i) => `<a href="#/gallery/${s}" style="--k:${i - 2}" aria-label="${esc(ARTS[s]?.title)}"><img src="art/sm/${s}.webp" alt="" loading="lazy"></a>`).join("")}</div>
           <div class="reveal" style="--d:.15s">
-            <span class="caps" style="color:var(--gold)">${latin("Soli Deo Gloria", "Glory to God Alone")}</span>
-            <h2>The art in these halls</h2>
-            <p>The masterpieces that light this archive were painted and carved to the glory of God. Each has its own story of commission, craft and faith.</p>
-            <a class="btn btn-ghost" href="#/gallery">Visit the gallery</a>
+            <span class="caps" style="color:var(--gold)">${latin("Soli Deo Gloria", tr("Glory to God Alone"))}</span>
+            <h2>${tr("The art in these halls")}</h2>
+            <p>${tr("The masterpieces that light this archive were painted and carved to the glory of God. Each has its own story of commission, craft and faith.")}</p>
+            <a class="btn btn-ghost" href="#/gallery">${tr("Visit the gallery")}</a>
           </div>
         </div>
-        <p class="center reveal dossier-link home-dossier"><a class="link-gold" href="#/s/dossier">The Dossier · the research behind the archive <span class="arrow">→</span></a></p>
+        <p class="center reveal dossier-link home-dossier"><a class="link-gold" href="#/s/dossier">${tr("The Dossier · the research behind the archive")} <span class="arrow">→</span></a></p>
       </section>
       ${footer()}`;
     setupHero();
@@ -810,25 +887,27 @@
     if (id === "sources") {
       const groups = {};
       INDEX.references.forEach((r) => (groups[r.section_title || "Other"] ||= []).push(r));
-      body = Object.entries(groups).map(([g, rs]) => `<div class="group reveal"><div class="group-head"><h2>${esc(g)}</h2><span>${rs.length} references</span></div>
+      body = Object.entries(groups).map(([g, rs]) => `<div class="group reveal"><div class="group-head"><h2>${esc(g)}</h2><span>${rs.length} ${tr("references")}</span></div>
         <div class="refs-list">${rs.map((r) => `<a class="ref-row" href="#/doc/citations/${r.id}" data-ref="${r.id}"><b>${esc(r.id)}</b><span>${esc(r.citation)}<small>${esc(r.note || "")}</small></span></a>`).join("")}</div></div>`).join("");
     } else {
-      body = s.groups.map((g) => `<div class="group reveal"><div class="group-head"><h2>${esc(g.title)}</h2><span>${g.ids.length} ${g.ids.length === 1 ? "writing" : "writings"}</span></div>
+      body = s.groups.map((g) => `<div class="group reveal"><div class="group-head"><h2>${esc(g.title)}</h2><span>${g.ids.length} ${tr(g.ids.length === 1 ? "writing" : "writings")}</span></div>
         <ol class="entries">${g.ids.filter((i) => CARDS[i]).map((i) => entry(CARDS[i])).join("")}</ol></div>`).join("");
     }
     view.innerHTML = `
-      ${banner({ detail: true, slug: s.plate, crumbs: `<a href="#/">The Jesus Archive</a><i>/</i><a href="#/" data-scroll="testimony">The testimony</a>`, kicker: s.kicker, title: esc(s.title), lede: esc(s.lede),
-        extra: `<div class="banner-stats"><span><b>${ids.length}</b>${id === "sources" ? "references" : "writings"}</span>${id === "sources" ? "" : `<span><b>${fmt(words)}</b>words</span>`}</div>` })}
-      <div class="sec-body" style="${accent(id)}">${HALL_FACTS[id] ? `<aside class="quick-facts reveal" aria-label="Quick facts">${HALL_FACTS[id].map(([v, l]) => `<p class="quick-fact"><span class="caps">Quick fact</span><b>${v}</b> ${l}</p>`).join("")}</aside>` : ""}${body}</div>
+      ${banner({ detail: true, slug: s.plate, crumbs: `<a href="#/">The Jesus Archive</a><i>/</i><a href="#/" data-scroll="testimony">${tr("The testimony")}</a>`, kicker: s.kicker, title: esc(s.title), lede: esc(s.lede),
+        extra: `<div class="banner-stats"><span><b>${ids.length}</b>${tr(id === "sources" ? "references" : "writings")}</span>${id === "sources" ? "" : `<span><b>${fmt(words)}</b>${tr("words")}</span>`}</div>` })}
+      <div class="sec-body" style="${accent(id)}">${HALL_FACTS[id] ? `<aside class="quick-facts reveal" aria-label="${tr("Quick facts")}">${HALL_FACTS[id].map(([v, l]) => `<p class="quick-fact"><span class="caps">${tr("Quick fact")}</span><b>${v}</b> ${l}</p>`).join("")}</aside>` : ""}${body}</div>
       ${footer()}`;
   }
 
+  // On a Spanish page, a link to a page that exists only in English says so.
+  const enOnly = (id) => (ES && !ES_PAGES.has("/" + id) ? ` <small class="lang-note">${tr("in English")}</small>` : "");
   function entry(c) {
     const a = ARTS[c.plate];
     return `<li class="entry"><a class="glow" href="#/doc/${c.id}">
       <span class="ghost-plate" style="--focus:${a?.focus || "50% 30%"}"><img src="art/sm/${fileOf(c.plate)}.webp" alt="" loading="lazy"></span>
       <span class="entry-year">${c.year != null && c.kind !== "research" ? esc(yearText(c.year)) : "✠"}<small>${esc(c.date)}</small></span>
-      <span><h3>${esc(c.title)}</h3>${c.author ? `<p class="by">${esc(c.author)}</p>` : ""}<p class="sum">${esc(c.summary)}</p></span>
+      <span><h3>${esc(c.title)}${enOnly(c.id)}</h3>${c.author ? `<p class="by">${esc(c.author)}</p>` : ""}<p class="sum">${esc(c.summary)}</p></span>
       <span class="arrow">→</span></a></li>`;
   }
 
@@ -838,7 +917,7 @@
     const sec = c.section === "sources" ? INDEX.sections.find((x) => x.id === "sources") : SECTIONS[c.section];
     document.title = `${c.title} | The Jesus Archive`;
     let d;
-    try { d = await getDoc(id); } catch { view.innerHTML = `<p class="loading">This document could not be loaded.</p>`; return; }
+    try { d = await getDoc(id); } catch { view.innerHTML = `<p class="loading">${tr("This document could not be loaded.")}</p>`; return; }
     if (parseHash().parts.slice(1).join("/") !== id) return;
     const a = ARTS[d.plate];
     const order = ORDER[c.section] || [];
@@ -850,6 +929,8 @@
     const comps = (INDEX.comparisons || []).filter((x) => x.docs.includes(id));
     const qa = await qaBlock(id);
     if (parseHash().parts.slice(1).join("/") !== id) return;
+    // A Spanish page whose ancient text has no public-domain Spanish edition shows the published English, marked as such.
+    const enText = ES && d.text_lang === "en", enAttr = enText ? ' lang="en"' : "";
 
     view.innerHTML = `
       <div class="progress"></div>
@@ -860,43 +941,43 @@
         <div class="doc-head-copy">
           <nav class="crumbs caps"><a href="#/">The Jesus Archive</a><i>/</i><a href="#/s/${sec.id}">${esc(sec.title)}</a>${c.group && !isSource ? `<i>/</i><span>${esc(c.group)}</span>` : ""}</nav>
           <h1>${esc(isSource ? `${c.short}` : d.title)}</h1>
-          <div class="doc-byline">${d.date_label ? `<span class="chip">${esc(d.date_label)}</span>` : ""}${d.author ? `<span>${esc(d.author)}</span>` : ""}${c.words > 400 && !isSource ? `<span style="color:var(--text-3)">· ${minutes(c.words)} min read</span>` : ""}${d.updated && !isSource ? `<span style="color:var(--text-3)">· ${d.published && d.published !== d.updated ? "Revised" : "Published"} <time datetime="${d.updated}">${new Date(d.updated + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time></span>` : ""}</div>
+          <div class="doc-byline">${d.date_label ? `<span class="chip">${esc(d.date_label)}</span>` : ""}${d.author ? `<span>${esc(d.author)}</span>` : ""}${c.words > 400 && !isSource ? `<span style="color:var(--text-3)">· ${minutes(c.words)} ${tr("min read")}</span>` : ""}${d.updated && !isSource ? `<span style="color:var(--text-3)">· ${tr(d.published && d.published !== d.updated ? "Revised" : "Published")} <time datetime="${d.updated}">${new Date(d.updated + "T12:00:00Z").toLocaleDateString(ES ? LOCALE : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time></span>` : ""}</div>
           ${(isSource ? d.title : d.summary) ? `<p class="doc-summary">${esc(isSource ? d.title : d.summary)}</p>` : ""}
-          <div class="doc-actions">${d.passages?.length ? `<a class="btn btn-gold" href="#" data-go="passages">What it says of Christ</a>` : ""}<a class="btn btn-ghost" href="#" data-go="text">${isSource ? "Details" : "Read the text"}</a><button type="button" class="btn btn-ghost" data-cite>Cite this page</button>${comps.length ? `<a class="btn btn-ghost" href="#/compare/${comps[0].slug}">Compare accounts</a>` : ""}</div>
+          <div class="doc-actions">${d.passages?.length ? `<a class="btn btn-gold" href="#" data-go="passages">${tr("What it says of Christ")}</a>` : ""}<a class="btn btn-ghost" href="#" data-go="text">${tr(isSource ? "Details" : "Read the text")}</a><button type="button" class="btn btn-ghost" data-cite>${tr("Cite this page")}</button>${comps.length ? `<a class="btn btn-ghost" href="#/compare/${comps[0].slug}">${tr("Compare accounts")}</a>` : ""}</div>
         </div>
       </header>
       <div class="doc-main" style="${accent(c.section)}">
-        ${d.intro?.length ? `<section class="intro reveal"><span class="caps">About this ${c.kind === "artifact" ? "artifact" : c.kind === "research" ? "chapter" : c.kind === "statement" ? "statement" : "witness"}</span>${d.intro.map((p) => `<p>${p}</p>`).join("")}</section>` : ""}
+        ${d.intro?.length ? `<section class="intro reveal"><span class="caps">${tr("About this " + (c.kind === "artifact" ? "artifact" : c.kind === "research" ? "chapter" : c.kind === "statement" ? "statement" : "witness"))}</span>${d.intro.map((p) => `<p>${p}</p>`).join("")}</section>` : ""}
         ${d.passages?.length ? `<section class="passages" id="passages">${d.passages.map((p, i) => `<figure class="passage reveal${d.literal_bold ? " literal" : ""}" style="margin:0;--d:${i * 0.1}s">
-            <span class="caps passage-label">${esc(p.label || "The passage")}</span>
-            <blockquote>${p.html}</blockquote>
+            <span class="caps passage-label">${esc(p.label || tr("The passage"))}${enText ? ` <small class="lang-note">${tr("in English")}</small>` : ""}</span>
+            <blockquote${enAttr}>${p.html}</blockquote>
             <figcaption class="passage-ref">${esc(p.ref || "")}</figcaption>
-            ${p.anchor ? `<a class="link-gold" href="#" data-to="${esc(p.anchor)}">Find it in the text <span class="arrow">↓</span></a>` : ""}
+            ${p.anchor ? `<a class="link-gold" href="#" data-to="${esc(p.anchor)}">${tr("Find it in the text")} <span class="arrow">↓</span></a>` : ""}
           </figure>`).join("")}</section>` : ""}
         ${qa}
-        ${comps.length ? `<section class="compare-band reveal"><span class="caps">Read side by side</span><div class="ent-chips">${comps.map((c) => `<a class="ent-chip chip-cmp" href="#/compare/${c.slug}">${esc(c.title)}</a>`).join("")}</div></section>` : ""}
+        ${comps.length ? `<section class="compare-band reveal"><span class="caps">${tr("Read side by side")}</span><div class="ent-chips">${comps.map((c) => `<a class="ent-chip chip-cmp" href="#/compare/${c.slug}">${esc(c.title)}</a>`).join("")}</div></section>` : ""}
         <section class="text-wrap" id="text" data-doc="${esc(id)}">
-          <div class="text-head"><span class="caps">${isSource ? "The reference" : "The text"}</span>${d.body_note ? `<p>${esc(d.body_note)}</p>` : ""}</div>
-          <article class="folio"><div class="prose${d.literal_bold ? " literal" : ""}" id="prose">${d.body_html}</div></article>
+          <div class="text-head"><span class="caps">${tr(isSource ? "The reference" : "The text")}</span>${d.body_note ? `<p>${esc(d.body_note)}</p>` : ""}</div>
+          <article class="folio"><div class="prose${d.literal_bold ? " literal" : ""}" id="prose"${enAttr}>${d.body_html}</div></article>
           <aside class="toc" id="toc"></aside>
         </section>
         <section class="after">
           <div class="provenance">
-            ${d.source?.name || d.source?.url ? `<b>Source</b><span>${esc(d.source.name || "")}${d.source.url ? `, <a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.url)}</a>` : ""}</span>` : ""}
-            ${d.source?.license ? `<b>Licence</b><span>${esc(d.source.license)}</span>` : ""}
-            ${refs.length ? `<b>Cited as</b><span class="ref-chips">${refs.map((r) => `<a href="#/doc/citations/${r}" data-ref="${r}">${r}</a>`).join("")}</span>` : ""}
+            ${d.source?.name || d.source?.url ? `<b>${tr("Source")}</b><span>${esc(d.source.name || "")}${d.source.url ? `, <a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.url)}</a>` : ""}</span>` : ""}
+            ${d.source?.license ? `<b>${tr("Licence")}</b><span>${esc(d.source.license)}</span>` : ""}
+            ${refs.length ? `<b>${tr("Cited as")}</b><span class="ref-chips">${refs.map((r) => `<a href="#/doc/citations/${r}" data-ref="${r}">${r}</a>`).join("")}</span>` : ""}
           </div>
           ${(() => {
             const people = (IN_DOC[id] || []).filter(([e]) => ENT[e]).sort((x, y) => y[1] - x[1]).slice(0, 14);
-            return people.length ? `<div class="in-text reveal"><span class="caps">People and places in this text</span><div class="ent-chips">${people.map(([e, n]) => `<a href="#/p/${e}" class="ent-chip ${ENT[e].kind}">${esc(ENT[e].name)}<i>${n}</i></a>`).join("")}</div></div>` : "";
+            return people.length ? `<div class="in-text reveal"><span class="caps">${tr("People and places in this text")}</span><div class="ent-chips">${people.map(([e, n]) => `<a href="#/p/${e}" class="ent-chip ${ENT[e].kind}">${esc(ENT[e].name)}<i>${n}</i></a>`).join("")}</div></div>` : "";
           })()}
-          ${related.length ? `<h2 class="reveal">Read alongside</h2><div class="cards">${related.map((r) => card(CARDS[r])).join("")}</div>` : ""}
-          ${prev || next ? `<div class="pager">${prev ? card(prev, "← Before") : "<span></span>"}${next ? card(next, "Next →", "next") : ""}</div>` : ""}
+          ${related.length ? `<h2 class="reveal">${tr("Read alongside")}</h2><div class="cards">${related.map((r) => card(CARDS[r])).join("")}</div>` : ""}
+          ${prev || next ? `<div class="pager">${prev ? card(prev, tr("← Before")) : "<span></span>"}${next ? card(next, tr("Next →"), "next") : ""}</div>` : ""}
         </section>
       </div>
       ${footer()}`;
 
-    citeInfo = { title: isSource ? `${c.short}: ${d.title}` : d.title, path: "/" + id, source: d.source, author: d.author };
+    citeInfo = { title: isSource ? `${c.short}: ${d.title}` : d.title, path: loc("/" + id), source: d.source, author: d.author };
     const prose = $("#prose");
     illuminate($(".intro p"));
     // The initial stands about three lines tall, so it needs a paragraph long enough to wrap around it;
@@ -930,7 +1011,7 @@
     if (!offer || !(saved > 0.04)) return;
     const pill = document.createElement("div");
     pill.className = "resume";
-    pill.innerHTML = `<button type="button" class="resume-go"><span class="caps">Continue reading</span><b>${Math.round(saved * 100)}% through</b><span class="arrow">↓</span></button><button type="button" class="resume-x" aria-label="Dismiss">×</button>`;
+    pill.innerHTML = `<button type="button" class="resume-go"><span class="caps">${tr("Continue reading")}</span><b>${Math.round(saved * 100)}% ${tr("through")}</b><span class="arrow">↓</span></button><button type="button" class="resume-x" aria-label="${tr("Dismiss")}">×</button>`;
     document.body.append(pill);
     const close = () => { pill.classList.add("out"); setTimeout(() => pill.remove(), 400); removeEventListener("scroll", passed); };
     const passed = () => { if (frac() >= saved - 0.01) close(); };
@@ -944,7 +1025,7 @@
 
   function card(c, label, cls = "") {
     const s = SECTIONS[c.section];
-    return `<a class="card ${cls}" href="#/doc/${c.id}" style="${accent(c.section)}">${plate(c.plate, false, "(max-width: 640px) 62vw, 320px")}<small class="caps">${esc(label || s?.title || "")}</small><b>${esc(c.title)}</b><span>${esc([c.date, c.author].filter(Boolean).join(" · "))}</span></a>`;
+    return `<a class="card ${cls}" href="#/doc/${c.id}" style="${accent(c.section)}">${plate(c.plate, false, "(max-width: 640px) 62vw, 320px")}<small class="caps">${esc(label || s?.title || "")}</small><b>${esc(c.title)}${enOnly(c.id)}</b><span>${esc([c.date, c.author].filter(Boolean).join(" · "))}</span></a>`;
   }
 
   function scrollToEl(el, offset = 110) {
@@ -969,10 +1050,10 @@
     if (heads.length < 3) { $(".text-wrap").classList.add("no-toc"); toc.remove(); return; }
     const chapters = heads.filter((h) => /^chapter-\d+$/.test(h.id));
     if (chapters.length > 3) {
-      toc.innerHTML = `<details open><summary><h4>Chapters</h4></summary><div class="chap-grid">${chapters.map((h) => `<a href="#" data-to="${h.id}">${h.id.split("-")[1]}</a>`).join("")}</div></details>`;
+      toc.innerHTML = `<details open><summary><h4>${tr("Chapters")}</h4></summary><div class="chap-grid">${chapters.map((h) => `<a href="#" data-to="${h.id}">${h.id.split("-")[1]}</a>`).join("")}</div></details>`;
     } else {
       const list = heads.length > 60 ? heads.filter((h) => h.tagName === "H2") : heads;
-      toc.innerHTML = `<details open><summary><h4>Contents</h4></summary><ol>${list.slice(0, 90).map((h) => {
+      toc.innerHTML = `<details open><summary><h4>${tr("Contents")}</h4></summary><ol>${list.slice(0, 90).map((h) => {
         let t = h.textContent.trim();
         if (t.length > 64) t = t.slice(0, 62) + "…";
         return `<li class="${h.tagName === "H3" ? "lvl3" : ""}"><a href="#" data-to="${h.id}">${esc(t)}</a></li>`;
@@ -999,7 +1080,7 @@
     const fab = document.createElement("div");
     fab.className = "toc-fab";
     fab.innerHTML = `<div class="toc-sheet" hidden><div class="toc-sheet-in">${$("details", toc).innerHTML.replace(/<\/?summary>/g, "")}</div></div>
-      <div class="toc-fab-btns"><button type="button" data-fab="toc">${$("h4", toc).textContent}</button><button type="button" data-fab="top" aria-label="Back to top">↑</button></div>`;
+      <div class="toc-fab-btns"><button type="button" data-fab="toc">${$("h4", toc).textContent}</button><button type="button" data-fab="top" aria-label="${tr("Back to top")}">↑</button></div>`;
     view.appendChild(fab);
     const sheet = $(".toc-sheet", fab);
     const close = () => { sheet.hidden = true; fab.classList.remove("open"); };
@@ -1057,7 +1138,7 @@
       document.title = `${P.title} | The Jesus Archive`;
       view.innerHTML = `
         ${banner({ slug: "emmaus", crumbs: "", kicker: "", title: esc(P.title), lede: esc(P.lede),
-          extra: `<div class="doc-actions"><a class="btn btn-gold" href="#/path/1">Begin the path</a></div>` })}
+          extra: `<div class="doc-actions"><a class="btn btn-gold" href="#/path/1">${tr("Begin the path")}</a></div>` })}
         <ol class="road">${stops.map((s, i) => {
           const c = CARDS[s.doc];
           return `<li class="reveal" style="${accent(c.section)}"><a class="glow" href="#/path/${i + 1}">
@@ -1072,33 +1153,35 @@
     const s = stops[i], c = CARDS[s.doc];
     const d = await getDoc(s.doc).catch(() => null);
     if (parseHash().parts[1] !== n) return;
-    const p = s.p === -1 ? null : d?.passages?.[s.p] || d?.passages?.[0];
+    const p = s.p === -1 ? null : (ES && s.esPassage) || d?.passages?.[s.p] || d?.passages?.[0];
+    // On a Spanish page, a passage that is still in its English translation says so.
+    const pEn = ES && p && !s.esPassage && !ES_PAGES.has("/" + s.doc) ? ` <small class="lang-note">${tr("in English")}</small>` : "";
     const next = stops[i + 1], prev = stops[i - 1];
     document.title = `${s.title} | ${P.title}`;
     view.innerHTML = `
       <section class="stop" style="${accent(c.section)}">
         <div class="stop-art">${plate(s.plate || c.plate, true)}${credit(s.plate || c.plate)}</div>
         <div class="stop-body">
-          <nav class="crumbs caps"><a href="#/path">Stop ${roman(i + 1)} of ${roman(stops.length)}</a>${s.date ? `<span class="stop-when"><i class="stop-dot" aria-hidden="true"></i><span class="stop-date">${esc(s.date)}</span></span>` : ""}</nav>
+          <nav class="crumbs caps"><a href="#/path">${tr("Stop")} ${roman(i + 1)} ${tr("of")} ${roman(stops.length)}</a>${s.date ? `<span class="stop-when"><i class="stop-dot" aria-hidden="true"></i><span class="stop-date">${esc(s.date)}</span></span>` : ""}</nav>
           <h1>${esc(s.title)}</h1>
-          <button type="button" class="listen" data-listen><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Listen</span></button>
+          <button type="button" class="listen" data-listen><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>${tr("Listen")}</span></button>
           <p class="stop-bridge">${s.bridge}</p>
           ${s.finale ? `<p class="stop-finale"><span class="gilt">${esc(s.finale)}</span><cite class="caps">${esc(s.finaleRef || "")}</cite></p>` : ""}
-          ${p ? `<figure class="passage stop-passage${d.literal_bold ? " literal" : ""}"><span class="caps passage-label">${esc(p.label || "")}</span><blockquote>${p.html}</blockquote><figcaption class="passage-ref">${esc(p.ref || "")} · ${esc(c.title)}</figcaption></figure>` : ""}
+          ${p ? `<figure class="passage stop-passage${d.literal_bold ? " literal" : ""}"><span class="caps passage-label">${esc(p.label || "")}${pEn}</span><blockquote>${p.html}</blockquote><figcaption class="passage-ref">${esc(p.ref || "")} · ${esc(c.title)}</figcaption></figure>` : ""}
           <div class="doc-actions">
-            ${next ? `<a class="btn btn-gold" href="#/path/${i + 2}">Next: ${esc(next.title)} <span class="arrow">→</span></a>` : `<a class="btn btn-gold" href="#" data-go="coda">Continue <span class="arrow">↓</span></a>`}
-            <a class="btn btn-ghost" href="${docHref(s.doc, p?.anchor)}">Read the full text</a>
+            ${next ? `<a class="btn btn-gold" href="#/path/${i + 2}">${tr("Next:")} ${esc(next.title)} <span class="arrow">→</span></a>` : `<a class="btn btn-gold" href="#" data-go="coda">${tr("Continue")} <span class="arrow">↓</span></a>`}
+            <a class="btn btn-ghost" href="${docHref(s.doc, p?.anchor)}">${tr("Read the full text")}${enOnly(s.doc)}</a>
           </div>
           ${prev ? `<a class="stop-prev link-gold" href="#/path/${i}">← ${esc(prev.title)}</a>` : ""}
         </div>
-        <nav class="stop-dots" aria-label="Stops">${stops.map((t, k) => `<a href="#/path/${k + 1}" class="${k === i ? "on" : k < i ? "done" : ""}" title="${esc(t.title)}"><span class="sr">${esc(t.title)}</span></a>`).join("")}</nav>
+        <nav class="stop-dots" aria-label="${tr("Stops")}">${stops.map((t, k) => `<a href="#/path/${k + 1}" class="${k === i ? "on" : k < i ? "done" : ""}" title="${esc(t.title)}"><span class="sr">${esc(t.title)}</span></a>`).join("")}</nav>
       </section>
       ${next ? "" : `<section class="coda" id="coda">
         ${plate("salvator-mundi", false, "100vw")}
         <div class="coda-copy">
-          <p class="coda-line">The witnesses have spoken.</p>
-          <p class="coda-sub">Every testimony in this archive is open to you, in their own words.</p>
-          <div class="coda-links"><a class="btn btn-gold" href="#/" data-scroll="testimony">Enter the seven halls</a><a class="btn btn-ghost" href="#/timeline">Walk the timeline</a></div>
+          <p class="coda-line">${tr("The witnesses have spoken.")}</p>
+          <p class="coda-sub">${tr("Every testimony in this archive is open to you, in their own words.")}</p>
+          <div class="coda-links"><a class="btn btn-gold" href="#/" data-scroll="testimony">${tr("Enter the seven halls")}</a><a class="btn btn-ghost" href="#/timeline">${tr("Walk the timeline")}</a></div>
         </div>
       </section>`}`;
     if (!next) {
@@ -1108,12 +1191,13 @@
       cleanup.push(() => io.disconnect());
       $(".stop").addEventListener("click", (e) => { if (e.target.closest('[data-go="coda"]')) { e.preventDefault(); window.scrollTo({ top: coda.getBoundingClientRect().top + scrollY, behavior: "smooth" }); } });
     }
-    setupNarration(s, p, c, i + 1);
+    // The narration is recorded in English; Spanish pages go without it for now.
+    if (ES) $("[data-listen]")?.remove(); else setupNarration(s, p, c, i + 1);
     // 7 · On a phone the way on stays in reach once the main buttons scroll away.
     const dock = document.createElement("nav");
     dock.className = "path-dock";
-    dock.setAttribute("aria-label", "Guided path");
-    dock.innerHTML = `${prev ? `<a href="/path/${i}" aria-label="Previous stop: ${esc(prev.title)}">←</a>` : "<span></span>"}<span class="caps">${roman(i + 1)} of ${roman(stops.length)}</span>${next ? `<a class="dock-next" href="/path/${i + 2}"><span>${esc(next.title)}</span> →</a>` : `<a class="dock-next" href="#coda">The close ↓</a>`}`;
+    dock.setAttribute("aria-label", tr("Guided Path"));
+    dock.innerHTML = `${prev ? `<a href="${loc(`/path/${i}`)}" aria-label="${tr("Previous stop:")} ${esc(prev.title)}">←</a>` : "<span></span>"}<span class="caps">${roman(i + 1)} ${tr("of")} ${roman(stops.length)}</span>${next ? `<a class="dock-next" href="${loc(`/path/${i + 2}`)}"><span>${esc(next.title)}</span> →</a>` : `<a class="dock-next" href="#coda">${tr("The close ↓")}</a>`}`;
     document.body.append(dock);
     // Shown while you read; it steps aside whenever the stop's own buttons are on screen.
     const acts = $(".stop .doc-actions");
@@ -1165,7 +1249,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794473144`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794516851`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1177,16 +1261,18 @@
   if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
   /* ═════════════ SIDE BY SIDE ═════════════ */
+  // Common Spanish words left unmarked in the side-by-side columns on Spanish pages.
+  const STOP_ES = new Set("que los las del por con una para como más pero sus les este esta ese esa entre cuando muy sin sobre también hasta hay donde quien desde todo nos durante todos uno les contra otros fue era han había ser son está estaba sido tiene tenía dijo dice les ellos ella ellas él".split(" "));
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript("data-js/compare.js?v=1794473144");
+    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794516851`);
     const list = COMPARE || [];
     if (!slug) {
-      document.title = "Compare the Accounts | The Jesus Archive";
+      document.title = `${tr("Compare the Accounts")} | The Jesus Archive`;
       view.innerHTML = `
-        ${banner({ slug: "disputation", crumbs: `<a href="#/">The Jesus Archive</a>`, kicker: "Read side by side", title: "Compare the Accounts", lede: "The same events told by different witnesses, set in parallel columns so you can see where they agree, where they differ, and what each adds." })}
+        ${banner({ slug: "disputation", crumbs: `<a href="#/">The Jesus Archive</a>`, kicker: tr("Read side by side"), title: tr("Compare the Accounts"), lede: tr("The same events told by different witnesses, set in parallel columns so you can see where they agree, where they differ, and what each adds.") })}
         <div class="sec-body"><ol class="entries">${list.map((c) => `<li class="entry"><a class="glow" href="#/compare/${c.slug}">
-          <span class="entry-year">${c.columns.length}<small>accounts</small></span>
+          <span class="entry-year">${c.columns.length}<small>${tr("accounts")}</small></span>
           <span><h3>${esc(c.title)}</h3><p class="sum">${esc(c.columns.map((x) => x.ref).join(" · "))}</p></span><span class="arrow">→</span></a></li>`).join("")}</ol></div>
         ${footer()}`;
       return;
@@ -1196,17 +1282,17 @@
     document.title = `${c.title} | The Jesus Archive`;
     const lead = CARDS[c.columns[0].doc];
     view.innerHTML = `
-      ${banner({ slug: lead?.plate || "disputation", crumbs: `<a href="#/">The Jesus Archive</a><i>/</i><a href="#/compare">Side by side</a>`, kicker: `${c.columns.length} accounts`, title: esc(c.title), lede: "" })}
+      ${banner({ slug: lead?.plate || "disputation", crumbs: `<a href="#/">The Jesus Archive</a><i>/</i><a href="#/compare">${tr("Side by side")}</a>`, kicker: `${c.columns.length} ${tr("accounts")}`, title: esc(c.title), lede: "" })}
       <section class="cmp-intro">${(c.intro || []).map((p) => `<p>${p}</p>`).join("")}
         ${c.notes?.length ? `<ul class="cmp-notes">${c.notes.map((n) => `<li>${n}</li>`).join("")}</ul>` : ""}
-        <p class="cmp-hint caps">Hover a word to find it in every account</p>
+        <p class="cmp-hint caps">${tr("Hover a word to find it in every account")}</p>
       </section>
       <div class="cmp-tabs" role="tablist">${c.columns.map((col, i) => `<button type="button" role="tab" data-col="${i}" class="${i ? "" : "on"}">${esc(col.label)}</button>`).join("")}</div>
       <section class="cmp" style="--cols:${c.columns.length}">${c.columns.map((col, i) => {
         const card = CARDS[col.doc];
         return `<article class="cmp-col ${i ? "" : "on"}" data-col="${i}" style="${accent(card?.section || "new-testament")}">
-          <header><span class="caps">${esc(col.label)}</span><b>${esc(col.ref)}</b>${card ? `<a class="link-gold" href="${docHref(col.doc, col.anchor)}">In context <span class="arrow">→</span></a>` : ""}</header>
-          <div class="prose cmp-text">${col.html}</div></article>`;
+          <header><span class="caps">${esc(col.label)}</span><b>${esc(col.ref)}</b>${card ? `<a class="link-gold" href="${docHref(col.doc, col.anchor)}">${tr("In context")}${enOnly(col.doc)} <span class="arrow">→</span></a>` : ""}</header>
+          <div class="prose cmp-text"${col.lang ? ` lang="${col.lang}"` : ""}>${col.html}</div></article>`;
       }).join("")}</section>
       ${footer()}`;
     // Every word becomes findable across the columns.
@@ -1215,7 +1301,7 @@
       while (w.nextNode()) if (!w.currentNode.parentElement.closest("sup")) nodes.push(w.currentNode);
       nodes.forEach((n) => {
         const span = document.createElement("span");
-        span.innerHTML = esc(n.nodeValue).replace(/[A-Za-z’']{3,}/g, (m) => { const k = m.toLowerCase().replace(/[’']s$/, ""); return STOP.has(k) ? m : `<span class="w" data-w="${k}">${m}</span>`; });
+        span.innerHTML = esc(n.nodeValue).replace(/[\p{L}’']{3,}/gu, (m) => { const k = m.toLowerCase().replace(/[’']s$/, ""); return STOP.has(k) || STOP_ES.has(k) ? m : `<span class="w" data-w="${k}">${m}</span>`; });
         n.replaceWith(span);
       });
     });
@@ -1238,19 +1324,19 @@
   /* ═════════════ STUDIES ═════════════ */
   // Four threads drawn through the whole archive. Their text lives in data-js/studies.js (from tools/studies/).
   const STUDY = {
-    life: { title: "The Life of Christ", kicker: "The story", banner: "baptism", card: "nativity-botticelli", blurb: "From Bethlehem to the empty tomb, each event with its Gospel passages and every other witness to it." },
-    prophecies: { title: "Prophecy and Fulfilment", kicker: "The promise", banner: "isaiah-prophet", card: "isaiah", blurb: "What Israel’s prophets wrote, set beside what the Gospels record." },
-    resurrection: { title: "The Resurrection", kicker: "The evidence", banner: "empty-tomb", card: "resurrection-raphael", blurb: "The death, the empty tomb, the witnesses and the first proclamation, gathered in one place." },
-    manuscripts: { title: "How the Text Survived", kicker: "The manuscripts", banner: "st-jerome", card: "p46-1cor", blurb: "The papyri and great codices that carry the New Testament, beside the copies of other ancient books." },
+    life: { title: tr("The Life of Christ"), kicker: tr("The story"), banner: "baptism", card: "nativity-botticelli", blurb: tr("From Bethlehem to the empty tomb, each event with its Gospel passages and every other witness to it.") },
+    prophecies: { title: tr("Prophecy and Fulfilment"), kicker: tr("The promise"), banner: "isaiah-prophet", card: "isaiah", blurb: tr("What Israel’s prophets wrote, set beside what the Gospels record.") },
+    resurrection: { title: tr("The Resurrection"), kicker: tr("The evidence"), banner: "empty-tomb", card: "resurrection-raphael", blurb: tr("The death, the empty tomb, the witnesses and the first proclamation, gathered in one place.") },
+    manuscripts: { title: tr("How the Text Survived"), kicker: tr("The manuscripts"), banner: "st-jerome", card: "p46-1cor", blurb: tr("The papyri and great codices that carry the New Testament, beside the copies of other ancient books.") },
   };
-  const KINDS = { explicit: "Cited as fulfilled", allusion: "Echoed", typology: "Foreshadowed" };
+  const KINDS = { explicit: tr("Cited as fulfilled"), allusion: tr("Echoed"), typology: tr("Foreshadowed") };
   const paras = (ps, cls = "") => (ps || []).map((p) => `<p${cls ? ` class="${cls}"` : ""}>${esc(p)}</p>`).join("");
   const docLink = (d, label, at) => CARDS[d] ? `<a class="xref" href="${docHref(d, at)}">${esc(label || CARDS[d].short || CARDS[d].title)}</a>` : "";
-  const quote = (t, label) => t ? `<figure class="sq">${label ? `<span class="caps">${esc(label)}</span>` : ""}<blockquote>${esc(t.text)}</blockquote>
-      <figcaption>${esc(t.ref)}${t.doc && CARDS[t.doc] ? ` <a class="link-gold" href="${docHref(t.doc, t.at)}">In context <span class="arrow">→</span></a>` : ""}</figcaption></figure>` : "";
-  const studyIntro = (S) => `<section class="intro reveal"><span class="caps">About this study</span>${paras(S.intro)}</section>`;
+  const quote = (t, label) => t ? `<figure class="sq">${label ? `<span class="caps">${esc(label)}</span>` : ""}<blockquote${t.lang ? ` lang="${t.lang}"` : ""}>${esc(t.text)}</blockquote>
+      <figcaption>${esc(t.ref)}${t.doc && CARDS[t.doc] ? ` <a class="link-gold" href="${docHref(t.doc, t.at)}">${tr("In context")}${enOnly(t.doc)} <span class="arrow">→</span></a>` : ""}</figcaption></figure>` : "";
+  const studyIntro = (S) => `<section class="intro reveal"><span class="caps">${tr("About this study")}</span>${paras(S.intro)}</section>`;
   const studyNext = (k) => { const others = Object.entries(STUDY).filter(([x]) => x !== k);
-    return `<section class="study-next"><div class="ornament">${CROSS}</div><span class="caps">The other studies</span><div class="studies">${others.map(([x, t]) => `<a class="study glow" href="#/${x}">${plate(t.card, false, "(max-width: 640px) 90vw, 360px")}<span class="caps">${esc(t.kicker)}</span><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div></section>`; };
+    return `<section class="study-next"><div class="ornament">${CROSS}</div><span class="caps">${tr("The other studies")}</span><div class="studies">${others.map(([x, t]) => `<a class="study glow" href="#/${x}">${plate(t.card, false, "(max-width: 640px) 90vw, 360px")}<span class="caps">${esc(t.kicker)}</span><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div></section>`; };
 
   async function renderStudy(k) {
     const T = STUDY[k];
@@ -1273,11 +1359,11 @@
     let n = 0;
     const all = S.groups.flatMap((g) => g.items);
     const count = (kd) => all.filter((it) => kd === "all" || it.kind === kd).length;
-    return `<div class="kind-filter reveal" role="group" aria-label="Show">${["all", ...Object.keys(KINDS)].map((kd) => `<button type="button" data-kind="${kd}" class="${kd === "all" ? "on" : ""}" aria-pressed="${kd === "all"}">${kd === "all" ? "All" : KINDS[kd]}<i>${count(kd)}</i></button>`).join("")}</div>
+    return `<div class="kind-filter reveal" role="group" aria-label="${tr("Show")}">${["all", ...Object.keys(KINDS)].map((kd) => `<button type="button" data-kind="${kd}" class="${kd === "all" ? "on" : ""}" aria-pressed="${kd === "all"}">${kd === "all" ? tr("All") : KINDS[kd]}<i>${count(kd)}</i></button>`).join("")}</div>
       <div class="sec-body pairs">${S.groups.map((g) => `<div class="group pgroup"><div class="group-head"><h2>${esc(g.title)}</h2><span>${g.items.length}</span></div>
         ${g.items.map((it) => `<article class="pair reveal" data-kind="${esc(it.kind)}" id="${esc(it.id)}">
           <header class="pair-head"><span class="pair-num">${roman(++n)}</span><h3>${esc(it.title)}</h3><span class="chip kind">${esc(KINDS[it.kind] || it.kind)}</span></header>
-          <div class="pair-cols">${quote(it.ot, "The prophecy")}<span class="pair-join" aria-hidden="true"></span>${quote(it.nt, "The fulfilment")}</div>
+          <div class="pair-cols">${quote(it.ot, tr("The prophecy"))}<span class="pair-join" aria-hidden="true"></span>${quote(it.nt, tr("The fulfilment"))}</div>
           ${it.note ? `<p class="pair-note">${esc(it.note)}</p>` : ""}
           ${(it.cite || []).filter((r) => REFS[r]).length ? `<p class="ref-chips">${it.cite.filter((r) => REFS[r]).map((r) => `<a href="#/doc/citations/${r}" data-ref="${r}">${r}</a>`).join("")}</p>` : ""}
         </article>`).join("")}</div>`).join("")}</div>`;
@@ -1295,17 +1381,17 @@
   }
 
   function lifeBody(S) {
-    return `<nav class="acts-nav" aria-label="Acts">${S.acts.map((a, i) => `<a href="#act-${esc(a.id)}"><i>${roman(i + 1)}</i>${esc(a.title)}</a>`).join("")}</nav>
+    return `<nav class="acts-nav" aria-label="${tr("Acts")}">${S.acts.map((a, i) => `<a href="#act-${esc(a.id)}"><i>${roman(i + 1)}</i>${esc(a.title)}</a>`).join("")}</nav>
       <div class="acts">${S.acts.map((a, i) => `<section class="act" id="act-${esc(a.id)}">
-        <header class="act-head reveal">${plate(a.art, false, "(max-width: 860px) 100vw, 1280px")}<div class="act-copy"><span class="caps">Act ${roman(i + 1)} · ${esc(a.span || "")}</span><h2>${esc(a.title)}</h2>${a.lede ? `<p class="study-text">${esc(a.lede)}</p>` : ""}</div></header>
+        <header class="act-head reveal">${plate(a.art, false, "(max-width: 860px) 100vw, 1280px")}<div class="act-copy"><span class="caps">${tr("Act")} ${roman(i + 1)} · ${esc(a.span || "")}</span><h2>${esc(a.title)}</h2>${a.lede ? `<p class="study-text">${esc(a.lede)}</p>` : ""}</div></header>
         <ol class="story">${a.events.map((ev) => `<li class="ev reveal" id="${esc(ev.id)}">
           <span class="ev-when">${esc(ev.when || "")}</span>
           <div class="ev-body"><h3>${esc(ev.title)}</h3>
             ${ev.place && ENT[ev.place] ? `<a class="ent-chip place" href="#/p/${ev.place}">${esc(ENT[ev.place].name)}</a>` : ""}
             <p>${esc(ev.summary)}</p>
             ${ev.quote ? `<blockquote class="ev-q">${esc(ev.quote.text)}<cite>${esc(ev.quote.ref)}</cite></blockquote>` : ""}
-            ${ev.refs?.length ? `<div class="ev-links"><span class="caps">Read it</span>${ev.refs.map((r) => CARDS[r.doc] ? `<a class="xref" href="${docHref(r.doc, r.at)}">${esc(r.label)}</a>` : "").join("")}</div>` : ""}
-            ${ev.witness?.filter((d) => CARDS[d]).length ? `<div class="ev-links wit"><span class="caps">Other witnesses</span>${ev.witness.map((d) => docLink(d)).join("")}</div>` : ""}
+            ${ev.refs?.length ? `<div class="ev-links"><span class="caps">${tr("Read it")}</span>${ev.refs.map((r) => CARDS[r.doc] ? `<a class="xref" href="${docHref(r.doc, r.at)}">${esc(r.label)}</a>` : "").join("")}</div>` : ""}
+            ${ev.witness?.filter((d) => CARDS[d]).length ? `<div class="ev-links wit"><span class="caps">${tr("Other witnesses")}</span>${ev.witness.map((d) => docLink(d)).join("")}</div>` : ""}
           </div></li>`).join("")}</ol></section>`).join("")}</div>`;
   }
   function setupActs() {
@@ -1322,38 +1408,38 @@
           <p class="line-claim">${esc(l.claim)}</p>
           ${paras(l.body)}
           ${(l.texts || []).map((t) => quote(t)).join("")}
-          ${l.links?.filter((d) => CARDS[d]).length ? `<div class="ev-links"><span class="caps">Read further</span>${l.links.map((d) => docLink(d, CARDS[d]?.title)).join("")}</div>` : ""}
+          ${l.links?.filter((d) => CARDS[d]).length ? `<div class="ev-links"><span class="caps">${tr("Read further")}</span>${l.links.map((d) => docLink(d, CARDS[d]?.title)).join("")}</div>` : ""}
         </div></section>`).join("")}</div>
       ${S.close?.length ? `<section class="study-close reveal"><div class="ornament">${CROSS}</div>${paras(S.close, "study-text")}
-        <div class="coda-links"><a class="btn btn-gold" href="#/compare/empty-tomb">The empty tomb, side by side</a><a class="btn btn-ghost" href="#/compare/resurrection-witnesses">The witnesses, side by side</a></div></section>` : ""}`;
+        <div class="coda-links"><a class="btn btn-gold" href="#/compare/empty-tomb">${tr("The empty tomb, side by side")}</a><a class="btn btn-ghost" href="#/compare/resurrection-witnesses">${tr("The witnesses, side by side")}</a></div></section>` : ""}`;
   }
 
   function manuscriptBody(S) {
     return `${S.stats?.length ? `<div class="stats reveal">${S.stats.map((x) => `<div><b>${esc(x.value)}</b><span>${esc(x.label)}</span></div>`).join("")}</div>` : ""}
       <div class="sec-body">
-        <div class="group"><div class="group-head"><h2>The great witnesses</h2><span>${S.witnesses.length} manuscripts</span></div>
+        <div class="group"><div class="group-head"><h2>${tr("The great witnesses")}</h2><span>${S.witnesses.length} ${tr("manuscripts")}</span></div>
           <div class="mss">${S.witnesses.map((w) => `<article class="ms reveal" id="${esc(w.id)}">
             ${w.art && ARTS[w.art] ? `<div class="ms-art">${plate(w.art, false, "(max-width: 640px) 90vw, 380px")}</div>` : `<div class="ms-art ms-blank" aria-hidden="true">${CROSS}</div>`}
             <div class="ms-copy"><span class="caps">${esc(w.date)}</span><h3>${esc(w.name)}</h3>
-              <dl><dt>Contains</dt><dd>${esc(w.contents)}</dd><dt>Kept</dt><dd>${esc(w.held)}</dd>${w.art && ARTS[w.art]?.source ? `<dt>Image</dt><dd><a class="ms-credit" href="${esc(ARTS[w.art].source)}" target="_blank" rel="noopener">${esc(ARTS[w.art].artist)}${/wikimedia/.test(ARTS[w.art].source) ? ", via Wikimedia Commons" : ""}</a></dd>` : ""}</dl>
-              <p>${esc(w.note)}</p>${w.doc && CARDS[w.doc] ? docLink(w.doc, "See it in the archive →") : ""}</div></article>`).join("")}</div></div>
-        ${S.compare?.length ? `<div class="group reveal"><div class="group-head"><h2>Beside other ancient books</h2></div>
-          <div class="table-wrap"><table class="ms-table"><thead><tr><th>Work</th><th>Written</th><th>Earliest copy</th><th>Gap</th><th>Copies</th></tr></thead>
-          <tbody>${S.compare.map((r) => `<tr class="${/new testament/i.test(r.work) ? "nt" : ""}"><th scope="row">${esc(r.work)}<small>${esc(r.author || "")}</small></th><td>${esc(r.written)}</td><td>${esc(r.earliest)}</td><td>${esc(r.gap)}</td><td>${esc(r.copies)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
+              <dl><dt>${tr("Contains")}</dt><dd>${esc(w.contents)}</dd><dt>${tr("Kept")}</dt><dd>${esc(w.held)}</dd>${w.art && ARTS[w.art]?.source ? `<dt>${tr("Image")}</dt><dd><a class="ms-credit" href="${esc(ARTS[w.art].source)}" target="_blank" rel="noopener">${esc(ARTS[w.art].artist)}${/wikimedia/.test(ARTS[w.art].source) ? ", via Wikimedia Commons" : ""}</a></dd>` : ""}</dl>
+              <p>${esc(w.note)}</p>${w.doc && CARDS[w.doc] ? docLink(w.doc, tr("See it in the archive →")) : ""}</div></article>`).join("")}</div></div>
+        ${S.compare?.length ? `<div class="group reveal"><div class="group-head"><h2>${tr("Beside other ancient books")}</h2></div>
+          <div class="table-wrap"><table class="ms-table"><thead><tr><th>${tr("Work")}</th><th>${tr("Written")}</th><th>${tr("Earliest copy")}</th><th>${tr("Gap")}</th><th>${tr("Copies")}</th></tr></thead>
+          <tbody>${S.compare.map((r) => `<tr class="${/new testament|nuevo testamento/i.test(r.work) ? "nt" : ""}"><th scope="row">${esc(r.work)}<small>${esc(r.author || "")}</small></th><td>${esc(r.written)}</td><td>${esc(r.earliest)}</td><td>${esc(r.gap)}</td><td>${esc(r.copies)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
         ${S.points?.length ? `<div class="points">${S.points.map((x) => `<div class="point reveal"><h3>${esc(x.title)}</h3><p>${esc(x.body).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p></div>`).join("")}</div>` : ""}
       </div>`;
   }
 
   /* ═════════════ PEOPLE AND PLACES ═════════════ */
   function renderPeople() {
-    document.title = "People and Places | The Jesus Archive";
-    const tile = (e) => `<a class="ent-tile glow reveal" href="#/p/${e.slug}">${plate(e.plate, false, "(max-width: 640px) 50vw, 240px")}<b>${esc(e.name)}</b><span>${esc(e.role || e.region || "")}</span><i>${e.mentions?.length || 0} writings</i></a>`;
+    document.title = `${tr("People and Places")} | The Jesus Archive`;
+    const tile = (e) => `<a class="ent-tile glow reveal" href="#/p/${e.slug}">${plate(e.plate, false, "(max-width: 640px) 50vw, 240px")}<b>${esc(e.name)}</b><span>${esc(e.role || e.region || "")}</span><i>${e.mentions?.length || 0} ${tr("writings")}</i></a>`;
     view.innerHTML = `
-      ${banner({ slug: "school-athens", crumbs: `<a href="#/">The Jesus Archive</a>`, kicker: "Who and where", title: "People and Places", lede: "The men and women, rulers and witnesses, towns and cities of the story. Choose any one to see every writing in the archive that mentions them." })}
+      ${banner({ slug: "school-athens", crumbs: `<a href="#/">The Jesus Archive</a>`, kicker: tr("Who and where"), title: tr("People and Places"), lede: tr("The men and women, rulers and witnesses, towns and cities of the story. Choose any one to see every writing in the archive that mentions them.") })}
       <div class="sec-body">
-        <div class="group"><div class="group-head"><h2>People</h2><span>${INDEX.people.length}</span></div><div class="ent-grid">${INDEX.people.map(tile).join("")}</div></div>
-        <div class="group"><div class="group-head"><h2>Places</h2><span>${INDEX.places.length} · <a class="link-gold" href="#/map">See them on the map</a></span></div><div class="ent-grid">${INDEX.places.map(tile).join("")}</div></div>
-        ${(() => { const cc = (INDEX.extraArt || []).filter((a) => /CC BY/.test(a.artist || "")); return cc.length ? `<details class="credits"><summary class="caps">Image credits</summary><ul>${cc.map((a) => `<li><a href="${esc(a.source)}" target="_blank" rel="noopener">${esc(a.title)}</a> · ${esc(a.artist)}</li>`).join("")}</ul></details>` : ""; })()}
+        <div class="group"><div class="group-head"><h2>${tr("People")}</h2><span>${INDEX.people.length}</span></div><div class="ent-grid">${INDEX.people.map(tile).join("")}</div></div>
+        <div class="group"><div class="group-head"><h2>${tr("Places")}</h2><span>${INDEX.places.length} · <a class="link-gold" href="#/map">${tr("See them on the map")}</a></span></div><div class="ent-grid">${INDEX.places.map(tile).join("")}</div></div>
+        ${(() => { const cc = (INDEX.extraArt || []).filter((a) => /CC BY/.test(a.artist || "")); return cc.length ? `<details class="credits"><summary class="caps">${tr("Image credits")}</summary><ul>${cc.map((a) => `<li><a href="${esc(a.source)}" target="_blank" rel="noopener">${esc(a.title)}</a> · ${esc(a.artist)}</li>`).join("")}</ul></details>` : ""; })()}
       </div>
       ${footer()}`;
   }
@@ -1361,9 +1447,9 @@
   const CHAIN_PEOPLE = new Set(["jesus", "peter", "john-son-of-zebedee", "paul", "clement-of-rome", "ignatius-of-antioch", "papias", "polycarp", "justin-martyr", "tatian", "irenaeus", "origen"]);
   let chainReady = null;
   async function renderChain(params) {
-    document.title = "The Chain of Witnesses | The Jesus Archive";
-    chainReady ||= loadScript("assets/chain.js?v=1794473144");
-    try { await chainReady; } catch { view.innerHTML = `<p class="loading">The chart could not be loaded.</p>`; return; }
+    document.title = `${tr("The Chain of Witnesses")} | The Jesus Archive`;
+    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794516851").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794516851"));
+    try { await chainReady; } catch { view.innerHTML = `<p class="loading">${tr("The chart could not be loaded.")}</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
 
@@ -1374,14 +1460,14 @@
     const ment = (e.mentions || []).filter(([d]) => CARDS[d]);
     const max = Math.max(1, ...ment.map(([, n]) => n));
     view.innerHTML = `
-      ${banner({ slug: e.plate, crumbs: `<a href="#/">The Jesus Archive</a><i>/</i><a href="#/people">People and places</a>`, kicker: e.role || e.region || "", title: esc(e.name),
-        extra: e.kind === "place" ? `<div class="doc-actions"><a class="btn btn-ghost" href="#/map?place=${slug}">Show on the map</a></div>`
-          : CHAIN_PEOPLE.has(slug) ? `<div class="doc-actions"><a class="btn btn-ghost chain-link" href="/chain?focus=${slug}">See them in the chain of witnesses</a></div>` : "" })}
-      <section class="intro reveal"><span class="caps">${e.kind === "place" ? "About this place" : "Who they were"}</span>${(e.bio || []).map((p) => `<p>${p}</p>`).join("")}</section>
+      ${banner({ slug: e.plate, crumbs: `<a href="#/">The Jesus Archive</a><i>/</i><a href="#/people">${tr("People and Places")}</a>`, kicker: e.role || e.region || "", title: esc(e.name),
+        extra: e.kind === "place" ? `<div class="doc-actions"><a class="btn btn-ghost" href="#/map?place=${slug}">${tr("Show on the map")}</a></div>`
+          : CHAIN_PEOPLE.has(slug) ? `<div class="doc-actions"><a class="btn btn-ghost chain-link" href="${loc("/chain")}?focus=${slug}">${tr("See them in the chain of witnesses")}</a></div>` : "" })}
+      <section class="intro reveal"><span class="caps">${tr(e.kind === "place" ? "About this place" : "Who they were")}</span>${(e.bio || []).map((p) => `<p>${p}</p>`).join("")}</section>
       <div class="sec-body">
-        ${e.key_docs?.length ? `<div class="group reveal"><div class="group-head"><h2>Where to start</h2></div><div class="cards">${e.key_docs.map((d) => card(CARDS[d])).join("")}</div></div>` : ""}
-        ${written.length ? `<div class="group reveal"><div class="group-head"><h2>Written or found here</h2><span>${written.length}</span></div><ol class="entries">${written.map(([d]) => entry(CARDS[d])).join("")}</ol></div>` : ""}
-        ${ment.length ? `<div class="group reveal"><div class="group-head"><h2>Every mention</h2><span>${ment.length} writings</span></div>
+        ${e.key_docs?.length ? `<div class="group reveal"><div class="group-head"><h2>${tr("Where to start")}</h2></div><div class="cards">${e.key_docs.map((d) => card(CARDS[d])).join("")}</div></div>` : ""}
+        ${written.length ? `<div class="group reveal"><div class="group-head"><h2>${tr("Written or found here")}</h2><span>${written.length}</span></div><ol class="entries">${written.map(([d]) => entry(CARDS[d])).join("")}</ol></div>` : ""}
+        ${ment.length ? `<div class="group reveal"><div class="group-head"><h2>${tr("Every mention")}</h2><span>${ment.length} ${tr("writings")}</span></div>
           <ol class="mentions">${ment.map(([d, n]) => { const c = CARDS[d]; return `<li style="${accent(c.section)}"><a href="${docHref(d, null, e.q)}"><span class="m-year">${esc(yearText(c.year) || "")}</span><span class="m-title">${esc(c.title)}<small>${esc(SECTIONS[c.section]?.title || "")}</small></span><span class="m-bar"><i style="width:${Math.max(6, (n / max) * 100)}%"></i></span><span class="m-n">${n}×</span></a></li>`; }).join("")}</ol></div>` : ""}
       </div>
       ${footer()}`;
@@ -1389,13 +1475,13 @@
 
   /* ═════════════ MAP ═════════════ */
   async function renderMap(focus) {
-    document.title = "The Map | The Jesus Archive";
-    view.innerHTML = `<section class="map-page"><div class="map-wrap" id="mapWrap"><p class="loading">Drawing the map…</p></div>
+    document.title = `${tr("The Map")} | The Jesus Archive`;
+    view.innerHTML = `<section class="map-page"><div class="map-wrap" id="mapWrap"><p class="loading">${tr("Drawing the map…")}</p></div>
       <aside class="map-panel" id="mapPanel"></aside>
-      <div class="map-legend"><h1 class="caps">The Map</h1><p>Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.</p>
-        <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">Where written</button><button type="button" data-layer="story">Places in the story</button></div></div></section>`;
+      <div class="map-legend"><h1 class="caps">${tr("The Map")}</h1><p>${tr("Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.")}</p>
+        <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">${tr("Where written")}</button><button type="button" data-layer="story">${tr("Places in the story")}</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794473144");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794516851");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1425,7 +1511,7 @@
         const n = (counts[p.slug] || []).length;
         return `<button type="button" class="pin ${n ? "has" : ""}" data-slug="${p.slug}" data-x="${x}" data-y="${y}" style="--n:${Math.sqrt(n)}" aria-label="${esc(p.name)}"><i></i><span>${esc(p.name)}</span></button>`;
       }).join("")}</div>
-      <div class="map-zoom"><button type="button" data-z="1.6" aria-label="Zoom in">+</button><button type="button" data-z="0.625" aria-label="Zoom out">−</button><button type="button" data-z="0" aria-label="Reset">⟲</button></div>`;
+      <div class="map-zoom"><button type="button" data-z="1.6" aria-label="${tr("Zoom in")}">+</button><button type="button" data-z="0.625" aria-label="${tr("Zoom out")}">−</button><button type="button" data-z="0" aria-label="${tr("Reset")}">⟲</button></div>`;
     const svg = d3.select(wrap).select("svg"), g = svg.select("#zoomer");
     const floating = $$(".map-pins .pin, .map-labels span", wrap).map((el) => [el, +el.dataset.x, +el.dataset.y]);
     let fit = { s: 1, ox: 0, oy: 0 };
@@ -1492,11 +1578,11 @@
       $$(".pin", wrap).forEach((x) => x.classList.toggle("sel", x.dataset.slug === slug));
       measure();
       const docs = (counts[slug] || []).map((d) => CARDS[d]).filter(Boolean).sort((a, b) => (a.year ?? 0) - (b.year ?? 0));
-      panel.innerHTML = `<button class="map-close" type="button" aria-label="Close"><svg class="x-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></button>
+      panel.innerHTML = `<button class="map-close" type="button" aria-label="${tr("Close")}"><svg class="x-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></button>
         <span class="caps">${esc(p.region || "")}</span><h2>${esc(p.name)}</h2>
         ${p.bio?.[0] ? `<p>${p.bio[0]}</p>` : ""}
-        ${docs.length ? `<h3 class="caps">Written or found here</h3><ul>${docs.map((c) => `<li style="${accent(c.section)}"><a href="#/doc/${c.id}"><i>${esc(yearText(c.year))}</i>${esc(c.title)}</a></li>`).join("")}</ul>` : ""}
-        <a class="link-gold" href="#/p/${slug}">${p.mentions?.length || 0} writings mention ${esc(p.name)} <span class="arrow">→</span></a>`;
+        ${docs.length ? `<h3 class="caps">${tr("Written or found here")}</h3><ul>${docs.map((c) => `<li style="${accent(c.section)}"><a href="#/doc/${c.id}"><i>${esc(yearText(c.year))}</i>${esc(c.title)}</a></li>`).join("")}</ul>` : ""}
+        <a class="link-gold" href="#/p/${slug}">${ES ? `${p.mentions?.length || 0} escritos mencionan ${esc(p.name)}` : `${p.mentions?.length || 0} writings mention ${esc(p.name)}`} <span class="arrow">→</span></a>`;
       panel.classList.add("on");
       $(".map-close", panel).addEventListener("click", () => { panel.classList.remove("on"); $$(".pin", wrap).forEach((x) => x.classList.remove("sel")); });
       if (fly) {
@@ -1519,7 +1605,7 @@
 
   /* ═════════════ TIMELINE ═════════════ */
   function renderTimeline() {
-    document.title = "The Timeline | The Jesus Archive";
+    document.title = `${tr("The Timeline")} | The Jesus Archive`;
     const items = timelineDocs();
     let era = -1, html = "";
     items.forEach((c) => {
@@ -1528,7 +1614,7 @@
       html += `<div class="tl-item reveal" style="${accent(c.section)}"><a href="#/doc/${c.id}"><span class="tl-year">${esc(c.date || yearText(c.year))}</span><b>${esc(c.title)}</b><p>${esc(c.summary)}</p><span class="caps sec">${esc(SECTIONS[c.section]?.title || "")}</span></a></div>`;
     });
     view.innerHTML = `
-      ${banner({ slug: "last-judgment", crumbs: `<a href="#/">The Jesus Archive</a>`, kicker: "Through the centuries", title: "The Timeline", lede: "Every witness in this archive, placed in the order it was written or made: prophecy and Gospel, historian and Father, stone and scroll." })}
+      ${banner({ slug: "last-judgment", crumbs: `<a href="#/">The Jesus Archive</a>`, kicker: tr("Through the centuries"), title: tr("The Timeline"), lede: tr("Every witness in this archive, placed in the order it was written or made: prophecy and Gospel, historian and Father, stone and scroll.") })}
       <div class="tl">${html}</div>
       ${footer()}`;
   }
@@ -1538,13 +1624,13 @@
   const QA_KEYS = new Set(["witnesses/tacitus-annals-15-44", "witnesses/josephus-antiquities-18", "archaeology/pilate-inscription", "study:resurrection"]);
   async function qaBlock(key) {
     if (!QA_KEYS.has(key)) return "";
-    if (!window.PAGES) await loadScript("data-js/pages.js?v=1794473144").catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794516851`).catch(() => {});
     const Q = window.PAGES?._qa?.[key];
-    return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">Questions and answers</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
+    return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">${tr("Questions and answers")}</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
   }
 
   async function renderPage(k) {
-    if (!window.PAGES) await loadScript("data-js/pages.js?v=1794473144").catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794516851`).catch(() => {});
     const P = window.PAGES?.[k];
     if (!P) return renderLost();
     document.title = `${P.title} | The Jesus Archive`;
@@ -1556,30 +1642,30 @@
 
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
-    document.title = "The Gallery | The Jesus Archive";
-    if (!window.STORIES) await loadScript("assets/stories.js?v=1794473144").catch(() => (window.STORIES = {}));
+    document.title = `${tr("The Gallery")} | The Jesus Archive`;
+    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794516851" : "assets/stories.js?v=1794516851").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
     // An artwork's own address (/gallery/<slug>) opens on that work: its painting and title head the page.
     const fa = focus && GALLERY.find((a) => a.slug === focus);
-    const artBanner = (a) => banner({ slug: a.slug, title: esc(a.title), lede: `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. One of the works in <a href="/gallery">the gallery</a> of this archive.` });
-    const hallBanner = () => banner({ slug: "school-athens", title: "The Gallery", lede: "The paintings and sculptures that light this archive. Walk along the wall, and choose any painting to hear its story." });
+    const artBanner = (a) => banner({ slug: a.slug, title: esc(a.title), lede: ES ? `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. Una de las obras de <a href="/es/gallery">la galería</a> de este archivo.` : `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. One of the works in <a href="/gallery">the gallery</a> of this archive.` });
+    const hallBanner = () => banner({ slug: "school-athens", title: tr("The Gallery"), lede: tr("The paintings and sculptures that light this archive. Walk along the wall, and choose any painting to hear its story.") });
     // On an artwork's page the header follows the painting being read, so heading and address always agree.
     const swapBanner = (html) => { if (fa) { const b = $(".banner", view); if (b) b.outerHTML = html; } };
     view.innerHTML = `
       ${fa ? artBanner(fa) : hallBanner()}
       <section class="hallway">
-        <div class="wall" id="wall" tabindex="0" role="region" aria-label="The gallery wall">
+        <div class="wall" id="wall" tabindex="0" role="region" aria-label="${tr("The gallery wall")}">
           ${GALLERY.map((a, i) => `<figure class="hung" data-art="${a.slug}" style="--i:${i}">
             <span class="spot" aria-hidden="true"></span>
             <button type="button" class="hung-frame frame" data-open="${a.slug}" aria-label="${esc(a.title)}, ${esc(a.artist)}"><span class="frame-inner"><img ${srcset(a.slug, "(max-width: 640px) 70vw, 380px")} alt="" loading="lazy" decoding="async"></span></button>
             <figcaption class="plaque"><span class="caps">${roman(i + 1)}</span><b>${esc(a.title)}</b><i>${esc(a.artist)} · ${esc(a.year)}</i></figcaption>
           </figure>`).join("")}
         </div>
-        <div class="wall-nav"><button type="button" data-walk="-1" aria-label="Walk back">←</button><span class="caps">Walk the gallery</span><button type="button" data-walk="1" aria-label="Walk on">→</button></div>
+        <div class="wall-nav"><button type="button" data-walk="-1" aria-label="${tr("Walk back")}">←</button><span class="caps">${tr("Walk the gallery")}</span><button type="button" data-walk="1" aria-label="${tr("Walk on")}">→</button></div>
       </section>
-      <aside class="story-drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="drawer-title" inert><button type="button" class="drawer-close" aria-label="Close"><svg class="x-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></button><div class="drawer-body"></div></aside>
+      <aside class="story-drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="drawer-title" inert><button type="button" class="drawer-close" aria-label="${tr("Close")}"><svg class="x-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></button><div class="drawer-body"></div></aside>
       ${footer()}`;
     const wall = $("#wall"), drawer = $("#drawer");
     const step = () => (wall.querySelector(".hung")?.offsetWidth || 400) + 40;
@@ -1600,22 +1686,22 @@
         <h2 id="drawer-title">${LATIN_TITLES[a.title] ? latin(a.title, LATIN_TITLES[a.title]) : esc(a.title)}</h2>
         <p class="meta">${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}</p>
         ${a.photoCredit ? `<p class="meta photo-credit"><a href="${esc(a.source)}" target="_blank" rel="noopener">${esc(a.photoCredit)}</a></p>` : ""}
-        <button type="button" class="drawer-art" data-zoom="${a.slug}" aria-label="View full size"><img ${srcset(a.slug, "420px")} alt="${esc(a.title)} by ${esc(a.artist)}"><span class="caps">View full size</span></button>
+        <button type="button" class="drawer-art" data-zoom="${a.slug}" aria-label="${tr("View full size")}"><img ${srcset(a.slug, "420px")} alt="${esc(a.title)}, ${esc(a.artist)}"><span class="caps">${tr("View full size")}</span></button>
         <div class="story">${(STORIES[a.slug] || []).map((p) => `<p>${p}</p>`).join("")}</div>
         <blockquote>“${esc(a.verse)}”<cite class="caps">${esc(a.ref)}</cite></blockquote>
-        ${uses[a.slug]?.length ? `<div class="seen"><span class="caps">In the archive</span>${uses[a.slug].slice(0, 5).map((c) => `<a href="#/doc/${c.id}">${esc(c.title)}</a>`).join("")}</div>` : ""}`;
+        ${uses[a.slug]?.length ? `<div class="seen"><span class="caps">${tr("In the archive")}</span>${uses[a.slug].slice(0, 5).map((c) => `<a href="#/doc/${c.id}">${esc(c.title)}</a>`).join("")}</div>` : ""}`;
       illuminate($(".drawer-body .story p", drawer));
       drawer.classList.add("on"); drawer.inert = false;
       $$(".hung", wall).forEach((h) => h.classList.toggle("sel", h.dataset.art === slug));
-      document.title = `${a.title} | The Gallery | The Jesus Archive`;
+      document.title = `${a.title} | ${tr("The Gallery")} | The Jesus Archive`;
       lastOpener = wall.querySelector(`[data-open="${CSS.escape(slug)}"]`);
-      if (push) { history.replaceState(null, "", "/gallery/" + slug); swapBanner(artBanner(a)); $(".drawer-close", drawer).focus({ preventScroll: true }); }
+      if (push) { history.replaceState(null, "", loc("/gallery/" + slug)); swapBanner(artBanner(a)); $(".drawer-close", drawer).focus({ preventScroll: true }); }
       // keep the chosen painting in view beside the drawer (an artwork page sets its own starting position below)
       const hung = lastOpener?.closest(".hung");
       if (push && hung && innerWidth > 760) wall.scrollTo({ left: hung.offsetLeft - (wall.clientWidth - drawer.offsetWidth - hung.offsetWidth) / 2, behavior: reduced ? "auto" : "smooth" });
     };
     let lastOpener = null;
-    const closeStory = () => { drawer.classList.remove("on"); drawer.inert = true; $$(".hung", wall).forEach((h) => h.classList.remove("sel")); history.replaceState(null, "", "/gallery"); swapBanner(hallBanner()); document.title = "The Gallery | The Jesus Archive"; lastOpener?.focus({ preventScroll: true }); };
+    const closeStory = () => { drawer.classList.remove("on"); drawer.inert = true; $$(".hung", wall).forEach((h) => h.classList.remove("sel")); history.replaceState(null, "", loc("/gallery")); swapBanner(hallBanner()); document.title = `${tr("The Gallery")} | The Jesus Archive`; lastOpener?.focus({ preventScroll: true }); };
     wall.addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b && !wall.classList.contains("drag")) openStory(b.dataset.open, true); });
     $(".drawer-close", drawer).addEventListener("click", closeStory);
     // clicking anywhere outside the open panel closes it (but not a painting, which swaps the story, or the full-size viewer)
@@ -1680,11 +1766,11 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794473144").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794516851").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
-    if (!wrap) return;
+    if (!wrap || ES) return;
     getNotes().then(() => {
       const list = NOTES?.[wrap.dataset.doc];
       if (!list || !wrap.isConnected || wrap.dataset.sn) return;
@@ -1802,9 +1888,9 @@
     if (!terms.length) {
       results = SUGGEST.filter((i) => CARDS[i]).map((i) => ({ id: i, t: esc(CARDS[i].title), s: CARDS[i].section, x: esc(CARDS[i].summary) }));
       qCount.textContent = "";
-      return draw("Where to begin");
+      return draw(tr("Where to begin"));
     }
-    if (!SEARCH) { qRes.innerHTML = `<li class="hint">Opening the archive…</li>`; return; }
+    if (!SEARCH) { qRes.innerHTML = `<li class="hint">${tr("Opening the archive…")}</li>`; return; }
     const scored = [];
     for (const d of SEARCH) {
       let score = 0, ok = true;
@@ -1832,13 +1918,13 @@
       if (from > 0) s = "…" + s.slice(s.indexOf(" ") + 1);
       return { id: d.id, t: esc(d.t).replace(re, "<mark>$1</mark>"), s: d.s, x: esc(s).replace(re, "<mark>$1</mark>") + "…", q: qIn.value.trim() };
     });
-    qCount.textContent = scored.length ? `${scored.length} found` : "";
+    qCount.textContent = scored.length ? `${scored.length} ${tr("found")}` : "";
     draw();
   }
   function draw(head) {
     sel = 0;
-    if (!results.length) { qRes.innerHTML = `<li class="hint">Nothing contains every word of “${esc(qIn.value)}”. Try fewer words.</li>`; return; }
-    qRes.innerHTML = (head ? `<li class="head caps">${head}</li>` : "") + results.map((r, i) => `<li class="${i === sel ? "sel" : ""}" style="${accent(r.s)}"><a href="${r.q ? docHref(r.id, null, r.q) : "#/doc/" + r.id}"><span class="c">${esc((SECTIONS[r.s] || { title: "Sources" }).title)}</span><span class="t">${r.t}</span><span class="x">${r.x}</span></a></li>`).join("");
+    if (!results.length) { qRes.innerHTML = `<li class="hint">${tr("Nothing contains every word of")} “${esc(qIn.value)}”. ${tr("Try fewer words.")}</li>`; return; }
+    qRes.innerHTML = (head ? `<li class="head caps">${head}</li>` : "") + results.map((r, i) => `<li class="${i === sel ? "sel" : ""}" style="${accent(r.s)}"><a href="${r.q ? docHref(r.id, null, r.q) : "#/doc/" + r.id}"><span class="c">${esc((SECTIONS[r.s] || { title: tr("Sources") }).title)}</span><span class="t">${r.t}</span><span class="x">${r.x}</span></a></li>`).join("");
   }
   function moveSel(k) {
     const items = $$("li", qRes).filter((l) => l.querySelector("a"));
@@ -1906,8 +1992,8 @@
   }
 
   function renderLost() {
-    document.title = "Not found | The Jesus Archive";
-    view.innerHTML = `<section class="lost"><div><div class="ornament">${CROSS}</div><h1>“Seek, and you will find.”</h1><p>Matthew 7:7, but not at this address.</p><p style="margin-top:30px"><a class="btn btn-gold" href="#/">Return home</a></p></div></section>`;
+    document.title = `${tr("Not found")} | The Jesus Archive`;
+    view.innerHTML = `<section class="lost"><div><div class="ornament">${CROSS}</div><h1>${tr("“Seek, and you will find.”")}</h1><p>${tr("Matthew 7:7, but not at this address.")}</p><p style="margin-top:30px"><a class="btn btn-gold" href="#/">${tr("Return home")}</a></p></div></section>`;
   }
 
   render();

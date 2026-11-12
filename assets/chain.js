@@ -92,13 +92,13 @@ const PEOPLE = { jesus: "jesus", peter: "peter", "john-son-of-zebedee": "john", 
 const GR = { 1: "In the earliest sources", 2: "Student or near-contemporary", 3: "Later tradition or disputed" };
 // Where a thread's quotation can be read on this site (first match wins; no link if the work isn't here).
 const SRC = [
-  [/Church History (\d)\./, (m) => ["1", "3", "4", "5"].includes(m[1]) && [`fathers/eusebius-he-${m[1]}`, `Eusebius, Church History, Book ${m[1]}`]],
-  [/Against Heresies (\d)\./, (m) => ["1", "3"].includes(m[1]) && [`fathers/irenaeus-ah-${m[1]}`, `Irenaeus, Against Heresies, Book ${m[1]}`]],
-  [/1 Corinthians/, () => ["scripture/new-testament/07-1-corinthians", "1 Corinthians"]],
-  [/Galatians/, () => ["scripture/new-testament/09-galatians", "Galatians"]],
+  [/Church History (\d)\./, (m) => ["1", "3", "4", "5"].includes(m[1]) && [`fathers/eusebius-he-${m[1]}`, CH_ES ? `Eusebio, Historia eclesiástica, libro ${m[1]}` : `Eusebius, Church History, Book ${m[1]}`]],
+  [/Against Heresies (\d)\./, (m) => ["1", "3"].includes(m[1]) && [`fathers/irenaeus-ah-${m[1]}`, CH_ES ? `Ireneo, Contra las herejías, libro ${m[1]}` : `Irenaeus, Against Heresies, Book ${m[1]}`]],
+  [/1 Corinthians/, () => ["scripture/new-testament/07-1-corinthians", CH_ES ? "1 Corintios" : "1 Corinthians"]],
+  [/Galatians/, () => ["scripture/new-testament/09-galatians", CH_ES ? "Gálatas" : "Galatians"]],
   [/Colossians/, () => ["scripture/new-testament/12-colossians", "Colossians"]],
   [/Philemon/, () => ["scripture/new-testament/18-philemon", "Philemon"]],
-  [/^Mark /, () => ["scripture/new-testament/02-mark", "the Gospel of Mark"]],
+  [/^Mark /, () => ["scripture/new-testament/02-mark", CH_ES ? "el Evangelio según Marcos" : "the Gospel of Mark"]],
 ];
 const sourceOf = (cite) => { for (const [re, f] of SRC) { const m = cite.match(re); if (m) return f(m) || null; } return null; };
 const PAGE_OF = Object.fromEntries(Object.entries(PEOPLE).map(([slug, id]) => [id, slug]));
@@ -106,6 +106,17 @@ const personLink = (id) => PAGE_OF[id] ? `<a class="d-link" href="#/p/${PAGE_OF[
 
 const ERAS = [["The Lord", 6, 40, "c. 30"], ["The Apostles", 40, 90, "30–90"], ["Their Hearers", 90, 140, "90–140"], ["The Next Generation", 140, 195, "140–195"], ["The Third Generation", 195, 250, "195–250"]];
 const CHAINS = [["jesus,john,polycarp,irenaeus", "John to Irenaeus"], ["jesus,peter,mark", "Peter and Mark"], ["jesus,paul,luke,mark", "Paul's circle"], ["peter,paul,clement", "The church at Rome"], ["pantaenus,clementA,origen", "Alexandria"]];
+// Spanish pages load data-js/es/chain.js first (window.CHAIN_ES): names, dates, biographies, the threads' texts
+// and the page's own wording. The English citation is kept for finding the source page.
+const CH_ES = window.LANG === "es" ? window.CHAIN_ES : null, S = (x) => CH_ES?.strings?.[x] ?? x;
+if (CH_ES) {
+  for (const [k, v] of Object.entries(CH_ES.nodes || {})) if (N[k]) Object.assign(N[k], v);
+  (CH_ES.edges || []).forEach((v, i) => { if (E[i]) { E[i].citeEn = E[i].cite; Object.assign(E[i], v); } });
+  ERAS.forEach((r) => (r[0] = S(r[0])));
+  CHAINS.forEach((c) => (c[1] = S(c[1])));
+  for (const k in GR) GR[k] = S(GR[k]);
+}
+const ad = (y) => (CH_ES ? `${y} d. C.` : `AD ${y}`);
 const NS = "http://www.w3.org/2000/svg";
 const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
 
@@ -113,29 +124,29 @@ function render(view, params, onCleanup) {
   view.innerHTML = `
     <section class="chain-page">
       <header class="chain-head">
-        <div class="chain-kicker">The Chain of Witnesses</div>
-        <h1>Who knew <em>whom</em></h1>
-        <p class="chain-lede">How the testimony about Jesus passed from hand to hand, from the apostles to the bishops and scholars of the third century. Every thread is a claim in an ancient source; tap one to read it.</p>
+        <div class="chain-kicker">${S("The Chain of Witnesses")}</div>
+        <h1>${S("Who knew <em>whom</em>")}</h1>
+        <p class="chain-lede">${S("How the testimony about Jesus passed from hand to hand, from the apostles to the bishops and scholars of the third century. Every thread is a claim in an ancient source; tap one to read it.")}</p>
       </header>
-      <div class="chain-controls"><div class="chain-chains"><span class="lbl">Follow a chain</span>${CHAINS.map(([c, t]) => `<button type="button" data-chain="${c}">${t}</button>`).join("")}</div></div>
+      <div class="chain-controls"><div class="chain-chains"><span class="lbl">${S("Follow a chain")}</span>${CHAINS.map(([c, t]) => `<button type="button" data-chain="${c}">${t}</button>`).join("")}</div></div>
       <div class="chain-controls"><div class="chain-legend">
-        <span><svg width="34" height="4"><line x1="0" y1="2" x2="34" y2="2" stroke="#f2dca1" stroke-width="2.2"/></svg>In the earliest sources</span>
-        <span><svg width="34" height="4"><line x1="0" y1="2" x2="34" y2="2" stroke="#dcb96f" stroke-width="1.9" stroke-dasharray="9 7"/></svg>Reported by a student or near-contemporary</span>
-        <span><svg width="34" height="4"><line x1="0" y1="2" x2="34" y2="2" stroke="#b8a785" stroke-width="1.7" stroke-dasharray="1.5 7" stroke-linecap="round"/></svg>Later tradition or disputed</span>
+        <span><svg width="34" height="4"><line x1="0" y1="2" x2="34" y2="2" stroke="#f2dca1" stroke-width="2.2"/></svg>${S("In the earliest sources")}</span>
+        <span><svg width="34" height="4"><line x1="0" y1="2" x2="34" y2="2" stroke="#dcb96f" stroke-width="1.9" stroke-dasharray="9 7"/></svg>${S("Reported by a student or near-contemporary")}</span>
+        <span><svg width="34" height="4"><line x1="0" y1="2" x2="34" y2="2" stroke="#b8a785" stroke-width="1.7" stroke-dasharray="1.5 7" stroke-linecap="round"/></svg>${S("Later tradition or disputed")}</span>
       </div></div>
-      <div class="chain-stage"><svg class="chain-svg" role="img" aria-label="Diagram of who knew whom among the early Christian witnesses"></svg></div>
+      <div class="chain-stage"><svg class="chain-svg" role="img" aria-label="${S("Diagram of who knew whom among the early Christian witnesses")}"></svg></div>
     </section>`;
   const drawer = document.createElement("aside");
   drawer.className = "chain-drawer";
   drawer.setAttribute("aria-live", "polite");
-  drawer.innerHTML = `<button class="x" type="button" aria-label="Close">×</button><div class="dbody"></div>`;
+  drawer.innerHTML = `<button class="x" type="button" aria-label="${S("Close")}">×</button><div class="dbody"></div>`;
   document.body.appendChild(drawer);
   const dbody = drawer.querySelector(".dbody");
   // Touch screens have no hover: the first tap shows the threads (what hovering does with a mouse)
   // and a small bar to open the details; a second tap on the same thing, or the bar, opens them.
   const peek = document.createElement("div");
   peek.className = "chain-peek";
-  peek.innerHTML = `<span class="pk-name"></span><button type="button" class="pk-open">Details</button><button type="button" class="pk-x" aria-label="Clear">×</button>`;
+  peek.innerHTML = `<span class="pk-name"></span><button type="button" class="pk-open">${S("Details")}</button><button type="button" class="pk-x" aria-label="${S("Clear")}">×</button>`;
   document.body.appendChild(peek);
   let peeked = null, peekOpen = null;
   const noHover = () => !matchMedia("(hover: hover)").matches;
@@ -184,11 +195,11 @@ function render(view, params, onCleanup) {
       if (vert) {
         el("rect", { x: 0, y: T(a), width: W, height: T(b) - T(a) }, g);
         const tx = el("text", { x: 12, y: T(a) + 26 }, g); tx.textContent = t;
-        const ty = el("text", { x: 12, y: T(a) + 48, class: "yrs" }, g); ty.textContent = "AD " + yrs;
+        const ty = el("text", { x: 12, y: T(a) + 48, class: "yrs" }, g); ty.textContent = ad(yrs);
       } else {
         el("rect", { x: T(a), y: 40, width: T(b) - T(a), height: 900 }, g);
         const tx = el("text", { x: (T(a) + T(b)) / 2, y: 76, "text-anchor": "middle" }, g); tx.textContent = t;
-        const ty = el("text", { x: (T(a) + T(b)) / 2, y: 101, "text-anchor": "middle", class: "yrs" }, g); ty.textContent = "AD " + yrs;
+        const ty = el("text", { x: (T(a) + T(b)) / 2, y: 101, "text-anchor": "middle", class: "yrs" }, g); ty.textContent = ad(yrs);
       }
     });
     if (!vert) {
@@ -197,16 +208,16 @@ function render(view, params, onCleanup) {
       for (let y = 30; y <= 250; y += 20) {
         const t = el("g", { class: "tick" }, ax);
         el("line", { x1: T(y), x2: T(y), y1: 954, y2: 966 }, t);
-        const tx = el("text", { x: T(y), y: 990, "text-anchor": "middle" }, t); tx.textContent = "AD " + y;
+        const tx = el("text", { x: T(y), y: 990, "text-anchor": "middle" }, t); tx.textContent = ad(y);
       }
     }
     const ad70 = el("g", { class: "ad70" }, svg);
     if (vert) {
       el("line", { x1: 8, x2: W - 8, y1: T(70), y2: T(70) }, ad70);
-      const t70 = el("text", { x: W - 10, y: T(70) - 8, "text-anchor": "end" }, ad70); t70.textContent = "Fall of Jerusalem, AD 70";
+      const t70 = el("text", { x: W - 10, y: T(70) - 8, "text-anchor": "end" }, ad70); t70.textContent = S("Fall of Jerusalem, AD 70");
     } else {
       el("line", { x1: T(70), x2: T(70), y1: 118, y2: 954 }, ad70);
-      const t70 = el("text", { x: T(70) + 8, y: 136 }, ad70); t70.textContent = "Fall of Jerusalem, AD 70";
+      const t70 = el("text", { x: T(70) + 8, y: 136 }, ad70); t70.textContent = S("Fall of Jerusalem, AD 70");
     }
 
     const edgeG = el("g", { class: "edges" }, svg);
@@ -249,7 +260,8 @@ function render(view, params, onCleanup) {
       } else { const t = el("text", { class: "mono-t" }, g); t.textContent = n.mono; }
       el("circle", { r, class: "ring" }, g);
       // On phones long names break onto two lines and labels are kept inside the chart's edges.
-      const lines = vert && n.name.length > 12 && n.name.includes(" of ") ? [n.name.slice(0, n.name.indexOf(" of ")), n.name.slice(n.name.indexOf(" of ") + 1)] : [n.name];
+      const of = CH_ES ? " de " : " of ";
+      const lines = vert && n.name.length > 12 && n.name.includes(of) ? [n.name.slice(0, n.name.indexOf(of)), n.name.slice(n.name.indexOf(of) + 1)] : [n.name];
       const fs = vert ? (n.root ? 19 : 16.5) : 0;
       const est = vert ? Math.max(...lines.map((l) => l.length)) * fs * .78 : 0;
       let shift = 0;
@@ -309,15 +321,15 @@ function render(view, params, onCleanup) {
     const e = E[i], A = N[e.a], B = N[e.b];
     locked = true; focus(new Set([e.a, e.b]), new Set([i])); e.g_el.classList.add("sel");
     dbody.innerHTML = `
-      <div class="d-kick">${e.met ? "They met" : "Passed on"}</div>
+      <div class="d-kick">${S(e.met ? "They met" : "Passed on")}</div>
       <div class="d-title">${A.name}<span class="arr">${e.met ? "&amp;" : "→"}</span>${B.name}</div>
       <span class="grade g${e.g}"><i></i>${GR[e.g]}</span>
       <blockquote>“${e.quote}”<cite>${e.cite}</cite></blockquote>
       <p>${e.text}</p>
       ${e.note ? `<p class="note">${e.note}</p>` : ""}
-      ${(() => { const s = sourceOf(e.cite); const ppl = [personLink(e.a), personLink(e.b)].filter(Boolean);
-        return (s ? `<a class="d-src" href="#/doc/${s[0]}">Read it in ${s[1]}<span aria-hidden="true"> →</span></a>` : "")
-          + (ppl.length ? `<div class="d-people"><span>About them</span>${ppl.join("")}</div>` : ""); })()}`;
+      ${(() => { const s = sourceOf(e.citeEn || e.cite); const ppl = [personLink(e.a), personLink(e.b)].filter(Boolean);
+        return (s ? `<a class="d-src" href="#/doc/${s[0]}">${S("Read it in")} ${s[1]}<span aria-hidden="true"> →</span></a>` : "")
+          + (ppl.length ? `<div class="d-people"><span>${S("About them")}</span>${ppl.join("")}</div>` : ""); })()}`;
     drawer.scrollTop = 0;
     drawer.classList.add("open");
   }
@@ -326,12 +338,12 @@ function render(view, params, onCleanup) {
     locked = true; focusLineage(id); n.g_el.classList.add("sel");
     const rel = E.map((e, i) => [e, i]).filter(([e]) => e.a === id || e.b === id);
     dbody.innerHTML = `
-      <div class="d-kick">Witness</div>
+      <div class="d-kick">${S("Witness")}</div>
       ${n.img ? `<img class="portrait" src="art/sm/${n.img}.webp" alt="">` : ""}
       <div class="d-title">${n.name}</div>
       <em class="d-date">${n.date}</em>
       <p>${n.bio}</p>
-      ${PAGE_OF[id] ? `<a class="d-src" href="#/p/${PAGE_OF[id]}">Everything on ${n.name}<span aria-hidden="true"> →</span></a>` : ""}
+      ${PAGE_OF[id] ? `<a class="d-src" href="#/p/${PAGE_OF[id]}">${S("Everything on")} ${n.name}<span aria-hidden="true"> →</span></a>` : ""}
       <ul class="links">${rel.map(([e, i]) => { const o = N[e.a === id ? e.b : e.a]; return `<li><button type="button" data-i="${i}"><span>${e.a === id ? "→ " : "← "}${o.name}</span><small>${GR[e.g]}</small></button></li>`; }).join("")}</ul>`;
     dbody.querySelectorAll("[data-i]").forEach((b) => b.addEventListener("click", () => openEdge(+b.dataset.i)));
     drawer.scrollTop = 0;
