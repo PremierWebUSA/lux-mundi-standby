@@ -34,22 +34,22 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794278816");
+  const indexReady = loadScript("data-js/index.js?v=1794472029");
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
-  indexReady.then(() => loadScript("data-js/glossary.js?v=1794278816")).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794278816"));
+  indexReady.then(() => loadScript("data-js/glossary.js?v=1794472029")).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript("data-js/studies.js?v=1794472029"));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794278816").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript("data-js/search.js?v=1794472029").then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794278816").catch(rej);
+    loadScript("data-js/doc/" + id.replaceAll("/", "__") + ".js?v=1794472029").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
   function prep() {
     CARDS = INDEX.docs;
     (INDEX.extraArt || []).forEach((a) => (ARTS[a.slug] ||= a));
-    // The 238 reference cards are rebuilt here from the register rather than shipped twice.
+    // The 244 reference cards are rebuilt here from the register rather than shipped twice.
     INDEX.references.forEach((r) => {
       CARDS["citations/" + r.id] ||= { id: "citations/" + r.id, title: r.citation, short: r.id, author: null, date: "", year: null, kind: "source",
         summary: r.note || "", section: "sources", group: r.section_title || "", plate: "st-jerome", words: 0, curated: true };
@@ -119,7 +119,7 @@
       ${plate("ghent-lamb", false, "70vw")}
       <div class="ornament">${CROSS}</div>
       <blockquote>“There are also many other things which Jesus did, which if they would all be written, I suppose that even the world itself wouldn’t have room for the books that would be written.”<cite class="caps">John 21 · 25</cite></blockquote>
-      <nav class="footer-nav">${INDEX.sections.map((s) => `<a href="#/s/${s.id}">${esc(s.title)}</a>`).join("")}<a href="#/timeline">Timeline</a><a href="#/gallery">Gallery</a>${window.PAGES ? `<a href="#/about">About</a><a href="#/faq">FAQ</a>` : ""}</nav>
+      <nav class="footer-nav">${INDEX.sections.map((s) => `<a href="#/s/${s.id}">${esc(s.title)}</a>`).join("")}<a href="#/timeline">Timeline</a><a href="#/gallery">Gallery</a><a href="#/about">About</a><a href="#/faq">FAQ</a></nav>
       <nav class="footer-nav">${Object.entries(STUDY).map(([k, t]) => `<a href="#/${k}">${esc(t.title)}</a>`).join("")}</nav>
       <div class="caps soli">${latin("Ecce Veritas", "Behold the Truth")}</div>
       <p class="footer-licence">The archive's own writing may be freely shared and adapted under <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" target="_blank">CC BY 4.0</a>, with credit to The Jesus Archive. Quoted translations and images keep their own licences, given with each one.</p>
@@ -591,6 +591,14 @@
     .filter((c) => c.year != null && c.kind !== "research" && c.kind !== "source")
     .sort((a, b) => a.year - b.year || INDEX.sections.findIndex((s) => s.id === a.section) - INDEX.sections.findIndex((s) => s.id === b.section));
 
+  // Smallest hero file that is still sharp. Phones and small tablets keep the light 1400px copy (as before);
+  // larger screens get the width the painting is actually drawn at (it covers the hero, about 2.2:1),
+  // times pixel density and the slow 14% zoom: 1400px (1x laptops), 2400px, or the full 3524px.
+  const heroFile = () => {
+    if (innerWidth < 900) return "md/creation-of-adam.webp";
+    const need = Math.max(innerWidth, innerHeight * 2.2) * Math.min(devicePixelRatio || 1, 2) * 1.14;
+    return need <= 1400 ? "md/creation-of-adam.webp" : need <= 2400 ? "lg/creation-of-adam.webp" : "creation-of-adam.webp";
+  };
   function renderHome() {
     document.title = "The Jesus Archive | The Greatest Story Ever Told";
     const total = Object.values(CARDS).filter((c) => c.section !== "sources").length;
@@ -605,7 +613,7 @@
     const title = "The Greatest Story Ever Told";
     view.innerHTML = `
       <section class="hero" aria-label="The Jesus Archive">
-        <div class="hero-art"><img id="heroImg" src="art/${innerWidth < 900 ? "md/creation-of-adam.webp" : "creation-of-adam.jpg"}" fetchpriority="high" alt="Michelangelo’s Creation of Adam: the hand of God reaching toward Adam"></div>
+        <div class="hero-art"><img id="heroImg" src="art/${heroFile()}" fetchpriority="high" alt="Michelangelo’s Creation of Adam: the hand of God reaching toward Adam"></div>
         <div class="hero-veil"></div>
         <canvas id="motes" aria-hidden="true"></canvas>
         <div class="spark" aria-hidden="true"></div>
@@ -840,6 +848,8 @@
     const refs = (d.refs || []).filter((r) => REFS[r]);
     const isSource = c.section === "sources";
     const comps = (INDEX.comparisons || []).filter((x) => x.docs.includes(id));
+    const qa = await qaBlock(id);
+    if (parseHash().parts.slice(1).join("/") !== id) return;
 
     view.innerHTML = `
       <div class="progress"></div>
@@ -863,6 +873,7 @@
             <figcaption class="passage-ref">${esc(p.ref || "")}</figcaption>
             ${p.anchor ? `<a class="link-gold" href="#" data-to="${esc(p.anchor)}">Find it in the text <span class="arrow">↓</span></a>` : ""}
           </figure>`).join("")}</section>` : ""}
+        ${qa}
         ${comps.length ? `<section class="compare-band reveal"><span class="caps">Read side by side</span><div class="ent-chips">${comps.map((c) => `<a class="ent-chip chip-cmp" href="#/compare/${c.slug}">${esc(c.title)}</a>`).join("")}</div></section>` : ""}
         <section class="text-wrap" id="text" data-doc="${esc(id)}">
           <div class="text-head"><span class="caps">${isSource ? "The reference" : "The text"}</span>${d.body_note ? `<p>${esc(d.body_note)}</p>` : ""}</div>
@@ -1154,7 +1165,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794278816`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794472029`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1168,7 +1179,7 @@
   /* ═════════════ SIDE BY SIDE ═════════════ */
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript("data-js/compare.js?v=1794278816");
+    if (!COMPARE) await loadScript("data-js/compare.js?v=1794472029");
     const list = COMPARE || [];
     if (!slug) {
       document.title = "Compare the Accounts | The Jesus Archive";
@@ -1250,7 +1261,9 @@
     if (!S) return renderLost();
     const top = banner({ slug: T.banner, detail: true, title: esc(T.title), lede: esc(S.lede) });
     const body = { life: lifeBody, prophecies: prophecyBody, resurrection: resurrectionBody, manuscripts: manuscriptBody }[k](S);
-    view.innerHTML = `${top}${studyIntro(S)}${body}${studyNext(k)}${footer()}`;
+    const qa = await qaBlock("study:" + k);
+    if (parseHash().parts[0] !== k) return;
+    view.innerHTML = `${top}${studyIntro(S)}${body}${qa ? `<div class="qa-study">${qa}</div>` : ""}${studyNext(k)}${footer()}`;
     illuminate($(".intro p"));
     if (k === "prophecies") setupKinds();
     if (k === "life") setupActs();
@@ -1349,7 +1362,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = "The Chain of Witnesses | The Jesus Archive";
-    chainReady ||= loadScript("assets/chain.js?v=1794278816");
+    chainReady ||= loadScript("assets/chain.js?v=1794472029");
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">The chart could not be loaded.</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1382,7 +1395,7 @@
       <div class="map-legend"><h1 class="caps">The Map</h1><p>Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">Where written</button><button type="button" data-layer="story">Places in the story</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794278816");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794472029");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1521,8 +1534,17 @@
   }
 
   /* ═════════════ ABOUT AND FAQ (preview builds only: data-js/pages.js exists only when PREVIEW_PAGES=1) ═════════════ */
+  // Question-and-answer sections on four flagship pages (text in data-js/pages.js, loaded only where needed).
+  const QA_KEYS = new Set(["witnesses/tacitus-annals-15-44", "witnesses/josephus-antiquities-18", "archaeology/pilate-inscription", "study:resurrection"]);
+  async function qaBlock(key) {
+    if (!QA_KEYS.has(key)) return "";
+    if (!window.PAGES) await loadScript("data-js/pages.js?v=1794472029").catch(() => {});
+    const Q = window.PAGES?._qa?.[key];
+    return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">Questions and answers</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
+  }
+
   async function renderPage(k) {
-    if (!window.PAGES) await loadScript("data-js/pages.js?v=1794278816").catch(() => {});
+    if (!window.PAGES) await loadScript("data-js/pages.js?v=1794472029").catch(() => {});
     const P = window.PAGES?.[k];
     if (!P) return renderLost();
     document.title = `${P.title} | The Jesus Archive`;
@@ -1535,7 +1557,7 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = "The Gallery | The Jesus Archive";
-    if (!window.STORIES) await loadScript("assets/stories.js?v=1794278816").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript("assets/stories.js?v=1794472029").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
@@ -1658,7 +1680,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794278816").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794472029").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;

@@ -1460,3 +1460,51 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 
 /* Direct links to a manuscript (/manuscripts#p52) land below the top bar. */
 .ms { scroll-margin-top: 90px; }
+/* FAQ: each question is a dropdown */
+.faq-item { border-bottom: 1px solid var(--rule, rgba(0,0,0,.14)); }
+.page-prose h2 + .faq-item { border-top: 1px solid var(--rule, rgba(0,0,0,.14)); }
+.faq-item > summary { list-style: none; cursor: pointer; position: relative; padding: 14px 36px 14px 0; font-family: var(--f-display, inherit); font-size: 1.12em; line-height: 1.35; }
+.faq-item > summary::-webkit-details-marker { display: none; }
+.faq-item > summary::after { content: "+"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 1.4em; line-height: 1; opacity: .6; transition: transform .2s; }
+.faq-item[open] > summary::after { transform: translateY(-50%) rotate(45deg); }
+.faq-item > summary:hover { opacity: .8; }
+.faq-item > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.faq-a { padding: 0 0 12px; }
+.faq-a > p:first-child { margin-top: 0; }
+
+/* ── Height-aware type (11 Nov 2026) ─────────────────────────────────────────
+   Big display headings were sized on width alone, so a 13-inch laptop (wide but short)
+   got the same huge type as a large monitor. Each size below is now the smaller of a
+   width and a height measure: unchanged on a big screen, calmer on a short one. */
+.hero-title { font-size: clamp(46px, min(7.4vw, 11vh), 118px); }
+.hero-title.latin.en { font-size: clamp(46px, min(7.2vw, 10.6vh), 112px); }
+.hero-copy { bottom: calc(clamp(52px, 10vh, 120px) + 94px + clamp(46px, min(7.4vw, 11vh), 118px)); }
+@media (max-width: 640px) { .hero-copy { bottom: calc(clamp(52px, 10vh, 120px) + 60px + 46px); } }
+.hero-sub { font-size: clamp(20px, min(2.8vw, 3.6vh), 35px); }
+.banner-copy h1 { font-size: clamp(44px, min(7vw, 9.6vh), 108px); }
+.section-title { font-size: clamp(40px, min(6vw, 8.6vh), 84px); }
+.doc-head h1 { font-size: clamp(40px, min(5.2vw, 8vh), 80px); }
+.stop-body h1 { font-size: clamp(40px, min(5vw, 7.6vh), 76px); }
+.tagline-line { font-size: clamp(48px, min(8.4vw, 12vh), 128px); }
+.chain-head h1 { font-size: clamp(44px, min(6.5vw, 8.8vh), 86px); }
+.coda-line { font-size: clamp(36px, min(5.4vw, 8vh), 80px); }
+
+/* Home hero: keep the gilt title and the line under it legible over the pale ceiling. */
+.hero-copy { z-index: 2; }
+.hero-copy::before { content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; width: min(1500px, 115%); height: 200%; transform: translate(-50%, -50%); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(11, 9, 7, .62), rgba(11, 9, 7, .38) 55%, rgba(11, 9, 7, 0)); }
+.hero-title { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .55)) drop-shadow(0 0 24px rgba(0, 0, 0, .45)); }
+.hero-sub { text-shadow: 0 1px 3px rgba(0, 0, 0, .9), 0 2px 22px rgba(0, 0, 0, .85); }
+.banner-copy h1, .hero-title { text-wrap: balance; }
+/* Preview pages: long source labels wrap instead of running off the page; linked labels look clickable. */
+.page-prose .src-key { white-space: normal; overflow-wrap: anywhere; }
+.page-prose a.src-key { text-decoration: none; transition: border-color .2s, color .2s; }
+.page-prose a.src-key:hover { border-color: currentColor; color: var(--page-ink, inherit); }
+/* Draft Q&A sections on flagship pages (preview only). */
+.qa-block { max-width: 900px; margin: clamp(40px, 6vw, 80px) auto; padding: 0 var(--gutter); text-align: center; }
+.qa-block > .caps { color: var(--gold); }
+.qa-block > h2 { font-family: var(--f-display); font-weight: 400; font-size: clamp(30px, min(3.6vw, 5.4vh), 46px); line-height: 1.1; margin: 12px 0 26px; color: var(--text); }
+.qa-block .folio { text-align: left; padding: clamp(22px, 4vw, 52px) clamp(18px, 4.5vw, 60px); }
+.qa-study { padding-top: 10px; }
+/* Questions are real headings (for search engines), styled as the dropdown line. */
+.faq-item > summary .faq-q { display: inline; font: inherit; color: inherit; margin: 0; letter-spacing: inherit; }
