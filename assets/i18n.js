@@ -145,6 +145,7 @@
     "words": "palabras",
     "references": "referencias",
     "in English": "en inglés",
+    "About these quotations": "Sobre estas citas",
 
     // studies
     "Show": "Mostrar",

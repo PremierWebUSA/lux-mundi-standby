@@ -49,16 +49,16 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794535102").then(() => ES && loadScript("data-js/es/index.js?v=1794535102").catch(() => {}));
+  const indexReady = loadScript("data-js/index.js?v=1794557634").then(() => ES && loadScript("data-js/es/index.js?v=1794557634").catch(() => {}));
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
   // (the glossary explains English terms, so Spanish pages go without it for now)
-  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794535102`)).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794535102`));
+  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794557634`)).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794557634`));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794535102`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794557634`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794535102").catch(rej);
+    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794557634").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
@@ -931,6 +931,10 @@
     if (parseHash().parts.slice(1).join("/") !== id) return;
     // A Spanish page whose ancient text has no public-domain Spanish edition shows the published English, marked as such.
     const enText = ES && d.text_lang === "en", enAttr = enText ? ' lang="en"' : "";
+    // Key passages quoted from an old Spanish edition while the full text stays in the published English:
+    // body_lang marks the full text, passage_note labels each quotation, and notice is shown before the quotations and again at the end.
+    const enBody = enText || (ES && d.body_lang === "en"), bodyAttr = enBody ? ' lang="en"' : "";
+    const notice = ES && d.notice ? (where) => `<aside class="notice notice-${where} reveal"><span class="caps">${tr("About these quotations")}</span><p>${d.notice}</p></aside>` : () => "";
 
     view.innerHTML = `
       <div class="progress"></div>
@@ -948,8 +952,9 @@
       </header>
       <div class="doc-main" style="${accent(c.section)}">
         ${d.intro?.length ? `<section class="intro reveal"><span class="caps">${tr("About this " + (c.kind === "artifact" ? "artifact" : c.kind === "research" ? "chapter" : c.kind === "statement" ? "statement" : "witness"))}</span>${d.intro.map((p) => `<p>${p}</p>`).join("")}</section>` : ""}
+        ${d.passages?.length ? notice("top") : ""}
         ${d.passages?.length ? `<section class="passages" id="passages">${d.passages.map((p, i) => `<figure class="passage reveal${d.literal_bold ? " literal" : ""}" style="margin:0;--d:${i * 0.1}s">
-            <span class="caps passage-label">${esc(p.label || tr("The passage"))}${enText ? ` <small class="lang-note">${tr("in English")}</small>` : ""}</span>
+            <span class="caps passage-label">${esc(p.label || tr("The passage"))}${enText ? ` <small class="lang-note">${tr("in English")}</small>` : ES && d.passage_note ? ` <small class="lang-note">${esc(d.passage_note)}</small>` : ""}</span>
             <blockquote${enAttr}>${p.html}</blockquote>
             <figcaption class="passage-ref">${esc(p.ref || "")}</figcaption>
             ${p.anchor ? `<a class="link-gold" href="#" data-to="${esc(p.anchor)}">${tr("Find it in the text")} <span class="arrow">↓</span></a>` : ""}
@@ -958,10 +963,11 @@
         ${comps.length ? `<section class="compare-band reveal"><span class="caps">${tr("Read side by side")}</span><div class="ent-chips">${comps.map((c) => `<a class="ent-chip chip-cmp" href="#/compare/${c.slug}">${esc(c.title)}</a>`).join("")}</div></section>` : ""}
         <section class="text-wrap" id="text" data-doc="${esc(id)}">
           <div class="text-head"><span class="caps">${tr(isSource ? "The reference" : "The text")}</span>${d.body_note ? `<p>${esc(d.body_note)}</p>` : ""}</div>
-          <article class="folio"><div class="prose${d.literal_bold ? " literal" : ""}" id="prose"${enAttr}>${d.body_html}</div></article>
+          <article class="folio"><div class="prose${d.literal_bold ? " literal" : ""}" id="prose"${bodyAttr}>${d.body_html}</div></article>
           <aside class="toc" id="toc"></aside>
         </section>
         <section class="after">
+          ${notice("end")}
           <div class="provenance">
             ${d.source?.name || d.source?.url ? `<b>${tr("Source")}</b><span>${esc(d.source.name || "")}${d.source.url ? `, <a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.url)}</a>` : ""}</span>` : ""}
             ${d.source?.license ? `<b>${tr("Licence")}</b><span>${esc(d.source.license)}</span>` : ""}
@@ -1249,7 +1255,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794535102`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794557634`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1265,7 +1271,7 @@
   const STOP_ES = new Set("que los las del por con una para como más pero sus les este esta ese esa entre cuando muy sin sobre también hasta hay donde quien desde todo nos durante todos uno les contra otros fue era han había ser son está estaba sido tiene tenía dijo dice les ellos ella ellas él".split(" "));
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794535102`);
+    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794557634`);
     const list = COMPARE || [];
     if (!slug) {
       document.title = `${tr("Compare the Accounts")} | The Jesus Archive`;
@@ -1448,7 +1454,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = `${tr("The Chain of Witnesses")} | The Jesus Archive`;
-    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794535102").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794535102"));
+    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794557634").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794557634"));
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">${tr("The chart could not be loaded.")}</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1481,7 +1487,7 @@
       <div class="map-legend"><h1 class="caps">${tr("The Map")}</h1><p>${tr("Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.")}</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">${tr("Where written")}</button><button type="button" data-layer="story">${tr("Places in the story")}</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794535102");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794557634");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1624,13 +1630,13 @@
   const QA_KEYS = new Set(["witnesses/tacitus-annals-15-44", "witnesses/josephus-antiquities-18", "archaeology/pilate-inscription", "study:resurrection"]);
   async function qaBlock(key) {
     if (!QA_KEYS.has(key)) return "";
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794535102`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794557634`).catch(() => {});
     const Q = window.PAGES?._qa?.[key];
     return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">${tr("Questions and answers")}</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
   }
 
   async function renderPage(k) {
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794535102`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794557634`).catch(() => {});
     const P = window.PAGES?.[k];
     if (!P) return renderLost();
     document.title = `${P.title} | The Jesus Archive`;
@@ -1643,7 +1649,7 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = `${tr("The Gallery")} | The Jesus Archive`;
-    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794535102" : "assets/stories.js?v=1794535102").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794557634" : "assets/stories.js?v=1794557634").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
@@ -1766,7 +1772,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794535102").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794557634").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
