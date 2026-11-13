@@ -1348,7 +1348,7 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .lang-menu { position: relative; display: flex; flex: none; }
 .lang-btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px 0 10px; background: rgba(255, 240, 200, .04); border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; color: var(--text-2); transition: border-color .3s, background .3s, color .3s, box-shadow .4s; }
 .lang-btn svg { width: 17px; height: 17px; }
-.lang-code { font-family: var(--f-caps); font-size: 12px; font-weight: 600; letter-spacing: .14em; }
+.lang-code { font-family: var(--f-caps); font-size: 14px; font-weight: 600; letter-spacing: .14em; }
 .lang-btn:hover, .lang-menu.open .lang-btn { border-color: var(--gold); color: var(--gold-hi); background: rgba(212, 176, 102, .08); box-shadow: 0 0 30px -8px rgba(212, 176, 102, .5); }
 .lang-drop { position: absolute; top: calc(100% + 12px); right: 0; min-width: 220px; display: grid; padding: 8px; background: rgba(18, 14, 10, .97); border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 30px 70px -20px #000, 0 0 0 1px rgba(0, 0, 0, .4); backdrop-filter: blur(14px); opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s .3s; z-index: 60; }
 .lang-menu.open .lang-drop { opacity: 1; visibility: visible; transform: none; transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s; }
@@ -1356,13 +1356,13 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .lang-item:hover { background: rgba(212, 176, 102, .1); color: var(--gold-hi); }
 .lang-item.on { color: var(--gold-hi); }
 .lang-item i { font-style: normal; font-size: 14px; color: var(--gold); }
-.lang-item small, .footer-lang-item small { font-family: var(--f-caps); font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.lang-item small, .footer-lang-item small { font-family: var(--f-caps); font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
 @media (max-width: 560px) { .lang-btn { width: 38px; padding: 0; justify-content: center; } .lang-code { display: none; } }
 @media (max-width: 1120px) { .lang-menu { margin-left: auto; } .lang-menu ~ .search-trigger { margin-left: 0; } }
 /* The same choice, quietly, at the foot of every page. */
 .footer-lang { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; margin: 26px auto 0; color: var(--text-3); }
 .footer-lang svg { width: 16px; height: 16px; }
-.footer-lang .caps { font-size: 12px; letter-spacing: .2em; }
+.footer-lang .caps { font-size: 14px; letter-spacing: .2em; }
 .footer-lang-links { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; }
 .footer-lang-item { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; color: var(--text-2); text-decoration: none; font-size: 17px; transition: color .25s, background .25s; }
 .footer-lang-item:hover { color: var(--gold-hi); background: rgba(212, 176, 102, .08); }
@@ -1551,10 +1551,12 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 }
 
 /* Spanish pages: a link to a page not yet translated says so. */
-.lang-note { font-family: var(--f-caps); font-size: .62em; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; vertical-align: .15em; margin-left: .35em; }
+.lang-note { font-family: var(--f-caps); font-size: max(.72em, 14px); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; vertical-align: .15em; margin-left: .35em; }
 
 /* Spanish pages that quote an old Spanish edition: a note before the quotations and again at the end */
-.notice { border: 1px solid var(--line, rgba(176,141,87,.35)); border-left: 3px solid var(--gold); border-radius: 6px; padding: 14px 18px; margin: 0 auto 28px; max-width: 720px; background: color-mix(in srgb, var(--gold) 6%, transparent); }
-.notice .caps { color: var(--gold); display: block; margin-bottom: 6px; }
-.notice p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--text-2, inherit); }
+.notice { border: 1px solid var(--line, rgba(176,141,87,.35)); border-left: 3px solid var(--gold); border-radius: 6px; padding: 24px 28px; margin: 0 auto 36px; max-width: 760px; background: color-mix(in srgb, var(--gold) 6%, transparent); }
+.notice .caps { color: var(--gold); display: block; margin-bottom: 12px; }
+.notice p { margin: 0; font-size: clamp(19px, 1.6vw, 21px); line-height: 1.65; color: var(--text); }
+/* the edition label on each quotation reads at the label's own size, not as a footnote */
+.passage-label .lang-note { font-size: 1em; color: var(--text-2); letter-spacing: .18em; }
 .notice-end { margin-top: 8px; }
