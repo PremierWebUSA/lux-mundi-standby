@@ -137,7 +137,7 @@ const E_ALL = [
   { a: "paul", b: "barnabas", g: 1, met: true, more: true, quote: "Then fourteen years after I went up again to Jerusalem with Barnabas, and took Titus with me also.", cite: "Paul, Galatians 2:1",
     text: "Paul names Barnabas as his companion in his own letters (Galatians 2:1, 9, 13; 1 Corinthians 9:6). Acts adds that Barnabas introduced Paul to the apostles (9:27), fetched him to Antioch (11:25–26) and travelled with him until they parted (15:39)." },
   { a: "barnabas", b: "mark", g: 1, more: true, quote: "And so Barnabas took Mark, and sailed unto Cyprus.", cite: "Acts 15:39; see also Colossians 4:10",
-    text: "Colossians calls Mark 'sister's son to Barnabas'. When Paul and Barnabas separated, Mark went with his cousin.",
+    text: "Colossians calls Mark 'sister's son to Barnabas' (the Greek word, anepsios, in fact means cousin). When Paul and Barnabas separated, Mark went with his cousin.",
     note: "Acts was written some decades after the event, and the authorship of Colossians is debated; the kinship itself is not in doubt." },
   { a: "paul", b: "timothy", g: 1, more: true, quote: "But ye know the proof of him, that, as a son with the father, he hath served with me in the gospel.", cite: "Paul, Philippians 2:22; see also 1 Thessalonians 3:2",
     text: "Timothy is co-sender of six of Paul's letters and his messenger to Thessalonica and Corinth (1 Thessalonians 3:2; 1 Corinthians 4:17). Acts 16:1–3 has Paul recruit him at Lystra." },
@@ -450,7 +450,8 @@ function render(view, params, onCleanup) {
       g.addEventListener("mouseenter", () => { if (!locked) focusLineage(n.id); });
       g.addEventListener("mouseleave", () => { if (!locked) unfocus(); });
     });
-    pulses = el("g", {}, svg);
+    // The travelling dots ignore the mouse, so one passing under the cursor never counts as leaving the face.
+    pulses = el("g", { "pointer-events": "none" }, svg);
     // Size each label's soft backing to its text once the fonts are in, so threads pass behind the names.
     const fit = () => labels.forEach(([bg, nm, dt]) => {
       const a = nm.getBBox(), b = dt.getBBox();

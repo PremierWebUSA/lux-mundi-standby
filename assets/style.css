@@ -70,6 +70,8 @@ kbd { font-family: var(--f-caps); font-size: 11px; letter-spacing: .08em; paddin
 /* ── plates: the paintings as part of the architecture ── */
 .plate { position: absolute; inset: 0; overflow: hidden; }
 .plate img { width: 100%; height: 100%; object-fit: cover; object-position: var(--focus, 50% 30%); transform: scale(1.04); transition: transform 2.2s var(--ease), filter 1.2s var(--ease), opacity 1.2s; }
+/* A painting can set a second focus for wide screens, where the banner shows only a thin band of a tall picture */
+@media (min-width: 861px) { .plate img { object-position: var(--focus-w, var(--focus, 50% 30%)); } }
 .plate::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(14, 11, 8, .55) 100%); pointer-events: none; }
 .plate-credit { position: absolute; z-index: 3; font-size: 15.5px; font-style: italic; color: rgba(237, 227, 205, .62); text-shadow: 0 1px 10px #000; text-decoration: none; transition: color .3s; }
 .plate-credit:hover { color: var(--gold-hi); }
@@ -1427,7 +1429,7 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .chain-svg.focus .edge:not(.on) .vis { opacity: .07; }
 .chain-svg.focus .node:not(.on) { opacity: .22 !important; transition: opacity .4s; }
 .chain-svg.focus .node.on { opacity: 1 !important; }
-.chain-svg .pulse { fill: var(--gold-hi); filter: drop-shadow(0 0 5px var(--gold-hi)); }
+.chain-svg .pulse { pointer-events: none; fill: var(--gold-hi); filter: drop-shadow(0 0 5px var(--gold-hi)); }
 /* phone: time runs down the page */
 .chain-svg.vert .band text { font-size: 14px; letter-spacing: .2em; }
 .chain-svg.vert .band .yrs { font-size: 16px; }
