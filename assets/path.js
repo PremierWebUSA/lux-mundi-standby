@@ -2,6 +2,7 @@
    Each stop shows one key passage from its document (p = index into that page's passages). */
 window.PATH = {
   title: "Start Here: Twelve Stops Through the Evidence",
+  card: "The oldest evidence for Jesus in twelve short stops, from those who knew him to Rome and the stones.",
   lede: "Twelve stops through the oldest evidence for Jesus of Nazareth, beginning with the earliest, written by those closest to him, and moving outward to Roman officials, Jewish historians and the stones themselves.",
   stops: [
     {

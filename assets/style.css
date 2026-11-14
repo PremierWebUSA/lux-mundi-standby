@@ -158,13 +158,16 @@ kbd { font-family: var(--f-caps); font-size: 11px; letter-spacing: .08em; paddin
               linear-gradient(180deg, rgba(11,9,7,.6) 0%, rgba(11,9,7,0) 22%, rgba(11,9,7,0) 44%, rgba(11,9,7,.9) 78%, var(--ink) 100%); }
 #motes { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; }
 .spark { position: absolute; left: var(--gx, 50%); top: var(--gy, 42%); width: 160px; height: 160px; margin: -80px 0 0 -80px; border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
-  background: radial-gradient(circle, rgba(255, 246, 215, .95) 0%, rgba(255, 222, 150, .42) 14%, rgba(255, 200, 120, .1) 40%, transparent 70%); animation: spark 5.5s ease-in-out infinite; }
+  background: radial-gradient(circle, rgba(255, 246, 215, .95) 0%, rgba(255, 222, 150, .42) 14%, rgba(255, 200, 120, .1) 40%, transparent 70%); animation: spark 6.5s ease-in-out infinite; }
 @keyframes spark { 0%, 100% { opacity: .23; transform: scale(.7); } 50% { opacity: .65; transform: scale(1.1); } }
 .hero-copy { position: absolute; left: 0; right: 0; bottom: clamp(52px, 10vh, 120px); text-align: center; padding: 0 var(--gutter); }
 .hero-kicker { color: var(--gold-hi); text-shadow: 0 0 18px #000, 0 0 6px #000, 0 1px 2px #000; opacity: 0; animation: rise 1.6s .4s var(--ease) forwards; }
 .hero-title { font-family: var(--f-display); font-weight: 400; font-style: italic; font-size: clamp(68px, 11.5vw, 176px); line-height: .9; margin: 14px 0 14px; letter-spacing: -.01em; }
-.hero-title .ch { display: inline-block; padding: 0 .02em; opacity: 0; transform: translateY(.35em) rotate(4deg); filter: blur(12px); animation: letter 1.5s var(--ease) calc(.6s + var(--i) * .035s) forwards, shimmer 10s ease-in-out 2.8s infinite; }
-@keyframes letter { to { opacity: 1; transform: none; filter: none; } }
+.hero-title .ch { display: inline-block; padding: 0 .02em; opacity: 0; transform: translateY(.35em) rotate(4deg); animation: letter 1.5s var(--ease) calc(.6s + var(--i) * .035s) forwards, shimmer 10s ease-in-out 2.8s infinite; }
+@keyframes letter { to { opacity: 1; transform: none; } }
+/* The blur sits on the whole title, not on each letter: a blurred letter counts as wider in Safari, which re-broke the lines while it cleared. */
+.hero-title { animation: title-focus 2.2s .5s var(--ease) both; }
+@keyframes title-focus { from { filter: blur(10px); } to { filter: none; } }
 .hero-sub { font-family: var(--f-display); font-style: italic; font-size: clamp(21px, 2.8vw, 35px); line-height: 1.3; color: var(--text); max-width: 1100px; margin: 0 auto; opacity: 0; animation: rise 1.8s 1.5s var(--ease) forwards; text-shadow: 0 2px 20px rgba(0,0,0,.8); }
 .hero-search { margin: 34px auto 0; width: min(560px, 100%); display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-radius: 999px; cursor: text; background: rgba(14, 11, 8, .5); border: 1px solid var(--line-strong); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-3); font-style: italic; font-size: 18px; opacity: 0; animation: rise 1.8s 1.9s var(--ease) forwards; transition: border-color .4s, box-shadow .5s, background .4s; }
 .hero-search:hover { border-color: var(--gold); box-shadow: 0 0 60px -10px rgba(212, 176, 102, .55); background: rgba(14, 11, 8, .7); color: var(--text-2); }
@@ -607,7 +610,7 @@ kbd { font-family: var(--f-caps); font-size: 11px; letter-spacing: .08em; paddin
 
 /* ═════════════ GUIDED PATH ═════════════ */
 .path-cta { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; max-width: 1440px; min-height: 380px; margin: 0 auto 30px; padding: clamp(28px, 4vw, 54px); overflow: hidden; text-decoration: none; border: 1px solid var(--line-strong); transition: border-color .6s, box-shadow .8s var(--ease), transform .8s var(--ease); }
-.path-cta .plate img { filter: brightness(.75) saturate(1); }
+.path-cta .plate img { filter: brightness(.9) saturate(1); }
 .path-cta .plate::after { background: linear-gradient(90deg, rgba(14,11,8,.95) 0%, rgba(14,11,8,.6) 50%, rgba(14,11,8,.15) 100%); }
 .path-cta > :not(.plate) { position: relative; z-index: 2; max-width: 620px; }
 .path-cta .caps { color: var(--gold); }
@@ -615,7 +618,7 @@ kbd { font-family: var(--f-caps); font-size: 11px; letter-spacing: .08em; paddin
 .path-cta-lede { color: var(--text-2); font-size: 18px; margin-bottom: 12px; }
 /* hovered cards glow instead of lifting: a lift moves the edge out from under the cursor and makes it flicker */
 .path-cta:hover { border-color: var(--gold); box-shadow: 0 40px 90px -40px #000, 0 0 80px -30px rgba(212, 176, 102, .5); }
-.path-cta:hover .plate img { transform: scale(1.08); filter: brightness(.88) saturate(1.05); }
+.path-cta:hover .plate img { transform: scale(1.08); filter: brightness(1) saturate(1.05); }
 .path-cta:hover .arrow { transform: translateX(6px); }
 .or { text-align: center; color: var(--text-3); margin: 34px 0 28px; }
 
@@ -652,9 +655,9 @@ kbd { font-family: var(--f-caps); font-size: 11px; letter-spacing: .08em; paddin
 .stop-dots a:hover { border-color: var(--gold-hi); }
 @media (max-width: 900px) {
   .stop { grid-template-columns: 1fr; }
-  .stop-art { position: relative; height: 52vh; }
+  .stop-art { position: relative; height: 52vh; z-index: 0; }
   .stop-art .plate::after { background: linear-gradient(0deg, var(--ink) 0%, transparent 50%); }
-  .stop-body { padding: 0 var(--gutter) 90px; margin-top: -60px; position: relative; }
+  .stop-body { padding: 0 var(--gutter) 90px; margin-top: -60px; position: relative; z-index: 1; }
   .stop-dots { top: auto; bottom: 0; left: 0; right: 0; transform: none; flex-direction: row; justify-content: center; padding: 14px; background: linear-gradient(transparent, var(--ink) 50%); }
 }
 .passage sup.v { font-family: var(--f-caps); font-style: normal; font-size: .5em; color: var(--gold); vertical-align: .55em; line-height: 0; margin-right: 2px; }
@@ -1023,14 +1026,14 @@ button.btn { background-color: transparent; }
 /* ═════════════ the four studies ═════════════ */
 .studies { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 .study { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 280px; padding: 22px 22px 24px; text-decoration: none; overflow: hidden; border: 1px solid var(--line); transition: border-color .5s, box-shadow .7s var(--ease); }
-.study .plate img { filter: brightness(.75) saturate(1); transition: transform 1.4s var(--ease), filter .8s; }
+.study .plate img { filter: brightness(.9) saturate(1); transition: transform 1.4s var(--ease), filter .8s; }
 .study .plate::after { background: linear-gradient(180deg, transparent 10%, rgba(14, 11, 8, .96) 100%); }
 .study > :not(.plate) { position: relative; z-index: 2; }
 .study .caps { color: var(--gold); font-size: 15.5px; }
 .study b { display: block; margin: 8px 0 6px; font-family: var(--f-display); font-weight: 500; font-size: 25px; line-height: 1.1; color: var(--text); transition: color .3s; }
 .study > span:last-child { color: var(--text-2); font-size: 19px; line-height: 1.4; }
 .study:hover { border-color: var(--line-strong); box-shadow: 0 30px 70px -30px #000, 0 0 60px -30px var(--gold); }
-.study:hover .plate img { transform: scale(1.06); filter: brightness(.88) saturate(1.05); }
+.study:hover .plate img { transform: scale(1.06); filter: brightness(1) saturate(1.05); }
 .study:hover b { color: var(--gold-hi); }
 @media (max-width: 1100px) { .studies { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .studies { grid-template-columns: 1fr; } .study { min-height: 220px; } }
@@ -1231,7 +1234,7 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .hall-row-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .hall-tiles { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 18px; }
 .hall-tile { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 300px; padding: 24px 26px; text-decoration: none; overflow: hidden; border: 1px solid var(--line); transition: border-color .4s, box-shadow .6s; }
-.hall-tile .plate img { filter: brightness(.75) saturate(1); transition: transform 1.4s var(--ease), filter .8s; }
+.hall-tile .plate img { filter: brightness(.9) saturate(1); transition: transform 1.4s var(--ease), filter .8s; }
 .hall-tile .plate::after { background: linear-gradient(180deg, transparent 38%, rgba(14, 11, 8, .55) 62%, rgba(14, 11, 8, .94) 100%); }
 .hall-tile > :not(.plate) { position: relative; z-index: 2; text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 0 18px rgba(0, 0, 0, .7); }
 .hall-kicker { color: var(--accent, var(--gold)); display: flex; align-items: center; gap: 10px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 0 14px rgba(0, 0, 0, .6); }
@@ -1240,7 +1243,7 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .hall-meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .hall-count { color: var(--text-2); font-style: italic; font-size: 18px; }
 .hall-tile:hover { border-color: var(--line-strong); box-shadow: 0 40px 80px -36px #000, 0 0 70px -34px var(--accent, var(--gold)); }
-.hall-tile:hover .plate img { transform: scale(1.06); filter: brightness(.88) saturate(1.05); }
+.hall-tile:hover .plate img { transform: scale(1.06); filter: brightness(1) saturate(1.05); }
 .hall-tile:hover h3 { color: var(--gold-hi); }
 .hall-tile:hover .arrow { transform: translateX(6px); }
 .dossier-link { margin-top: clamp(10px, 2vw, 20px); }
@@ -1408,7 +1411,7 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .chain-svg .edge.g1 .vis { stroke: var(--g1); stroke-width: 2.2; opacity: .85; }
 .chain-svg .edge.g2 .vis { stroke: var(--g2); stroke-width: 1.9; stroke-dasharray: 9 7; opacity: .8; }
 .chain-svg .edge.g3 .vis { stroke: var(--g3); stroke-width: 1.7; stroke-dasharray: 1.5 7; opacity: .85; }
-.chain-svg .edge.met .vis { stroke-width: 1.4; opacity: .55; }
+/* meetings are drawn at the same weight as the other threads of their grade (they were thinner) */
 .chain-svg .edge:hover .vis, .chain-svg .edge.sel .vis { stroke-width: 3.4; opacity: 1; filter: drop-shadow(0 0 6px rgba(242, 220, 161, .7)); }
 .chain-svg .node { cursor: pointer; opacity: 0; animation: chain-rise 1s var(--ease) both; }
 @keyframes chain-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -1560,3 +1563,108 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 /* the edition label on each quotation reads at the label's own size, not as a footnote */
 .passage-label .lang-note { font-size: 1em; color: var(--text-2); letter-spacing: .18em; }
 .notice-end { margin-top: 8px; }
+
+/* Home cards: the full line on wide screens, a one-line summary on phones */
+.on-phone { display: none; }
+@media (max-width: 640px) { .on-desk { display: none; } .on-phone { display: inline; } }
+
+/* Timeline ribbon: era labels sit on the same line as the entries (it used to step down 12px at every era) */
+.era-tick::before { top: 42px; background: linear-gradient(90deg, var(--line), var(--gold-lo)); }
+.era-tick::after { content: ""; position: absolute; left: 0; top: 37px; width: 11px; height: 11px; transform: rotate(45deg); background: var(--gold-lo); }
+.era-tick span { display: block; margin-top: 14px; }
+/* The birth of Christ, where BC turns to AD */
+.era-christ { padding-right: 60px; }
+.era-christ::before { background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi) 30%, var(--gold-lo)); box-shadow: 0 0 12px rgba(212, 176, 102, .45); }
+.era-christ::after { display: none; }
+.era-christ .era-mark { position: absolute; left: -15px; top: 22px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); border: 1px solid var(--gold); color: var(--gold-hi); box-shadow: 0 0 22px rgba(212, 176, 102, .45), inset 0 0 12px rgba(212, 176, 102, .18); }
+.era-christ .era-mark svg { width: 24px; height: 24px; }
+.era-christ span { font-size: 30px; padding-left: 30px; text-shadow: 0 0 24px rgba(212, 176, 102, .45); }
+/* Full timeline page */
+.tl-christ { margin: 120px 0 70px; }
+.tl-christ .ornament { position: relative; margin-bottom: 14px; }
+.tl-christ .ornament svg { width: 30px; height: 30px; filter: drop-shadow(0 0 10px rgba(242, 220, 161, .6)); }
+.tl-christ h2 { font-size: clamp(38px, 4.6vw, 60px); text-shadow: 0 0 34px rgba(212, 176, 102, .35); }
+.tl-christ blockquote { position: relative; margin: 10px auto 4px; max-width: 560px; padding: 0 20px; background: var(--ink); font-family: var(--f-display); font-style: italic; font-size: clamp(21px, 2vw, 26px); color: var(--text); }
+.tl-christ cite { display: block; margin-top: 6px; font-family: var(--f-caps); font-style: normal; font-size: 13.5px; letter-spacing: .24em; color: var(--gold); }
+@media (max-width: 700px) { .tl-christ .ornament { justify-content: flex-start; } .tl-christ blockquote { padding-left: 8px; margin-left: 0; } }
+.tl-christ { background: var(--ink); padding: 18px 0; }
+
+/* Header (desktop): Explore is a three-line menu button; the order is links, Explore, search, language at the far right */
+@media (min-width: 1121px) {
+  .bar .search-trigger { order: 1; }
+  .bar .lang-menu { order: 2; }
+  .nav-more-btn { width: 38px; height: 38px; padding: 0; justify-content: center; border: 1px solid var(--line-strong); border-radius: 50%; color: var(--gold-hi); letter-spacing: 0; }
+  .nav-more-btn svg { width: 18px; height: 18px; }
+  .nav-more.open .nav-more-btn svg { transform: none; }
+  .nav-more-btn:hover, .nav-more.open .nav-more-btn { border-color: var(--gold); background: rgba(212, 176, 102, .08); }
+  .bar-nav { align-items: center; }
+}
+
+/* Home page: slow motes of light behind the content below the hero (see setupDrift) */
+.drift { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1.6s ease; mix-blend-mode: screen; }
+.drift.on { opacity: 1; }
+@media print { .drift { display: none; } }
+
+/* Map region names: readable, with the modern name beneath */
+.map-labels span { display: grid; justify-items: center; font-size: 22px; letter-spacing: .16em; color: rgba(232, 204, 146, .78); text-shadow: 0 1px 3px rgba(0, 0, 0, .85), 0 0 14px rgba(0, 0, 0, .6); }
+.map-labels span small { font-family: var(--f-body); font-style: normal; font-size: 15px; letter-spacing: .04em; color: rgba(232, 214, 176, .7); }
+@media (max-width: 760px) { .map-labels span { font-size: 17px; } .map-labels span small { font-size: 13px; } .pin span { font-size: 13px; } }
+/* "The Word made flesh" centred between its neighbours, with the cross centred over it (the tick before it already ends in 22px of padding) */
+.era-christ { padding: 56px 56px 0 34px; text-align: center; }
+.era-christ span { padding-left: 0; }
+.era-christ .era-mark { left: calc(34px + (100% - 90px) / 2); translate: -50% 0; }
+/* Home cards: a stronger left-to-right fade, dark behind the text and clear on the right (14 Nov 2026) */
+.path-cta .plate::after { background: linear-gradient(90deg, rgba(14,11,8,.97) 0%, rgba(14,11,8,.85) 28%, rgba(14,11,8,.35) 56%, rgba(14,11,8,0) 82%); }
+.study .plate::after { background: linear-gradient(90deg, rgba(14,11,8,.62) 0%, rgba(14,11,8,.25) 45%, rgba(14,11,8,0) 78%), linear-gradient(180deg, transparent 10%, rgba(14, 11, 8, .96) 100%); }
+.hall-tile .plate::after { background: linear-gradient(90deg, rgba(14,11,8,.62) 0%, rgba(14,11,8,.25) 45%, rgba(14,11,8,0) 78%), linear-gradient(180deg, transparent 38%, rgba(14, 11, 8, .55) 62%, rgba(14, 11, 8, .94) 100%); }
+
+/* Home page: the Chain of Witnesses chart, fetched as the reader nears it; the box keeps its height so nothing jumps */
+.home-chain { margin: 10px calc(var(--gutter) * -1) 0; aspect-ratio: 1600 / 1080; }
+.home-chain.ready { aspect-ratio: auto; }
+.home-chain .chain-page.compact { padding-top: 0; background: none; }
+@media (max-width: 760px) { .home-chain { aspect-ratio: 480 / 1960; } }
+/* Home "Who knew whom": the legend sits close under the lede */
+#witness-chain .section-head { margin-bottom: clamp(14px, 2vw, 26px); }
+.home-chain .chain-page.compact > .chain-controls:first-child { margin-top: 0; }
+#witness-chain .section-lede { max-width: 860px; }
+
+/* Chain chart: 'kept his writings' threads (custody of a library, not acquaintance) and two-letter initials */
+.chain-svg .edge.kept .vis { stroke-width: 1.5; stroke-dasharray: 14 4 2 4; opacity: .7; }
+.chain-svg .node .mono-t.two { font-size: 28px; letter-spacing: -.02em; }
+.chain-svg.vert .node .mono-t.two { font-size: 22px; }
+
+/* Full chain chart: wider than the screen, scrolled sideways inside its own strip */
+.chain-stage.scroll { max-width: none; overflow-x: auto; overflow-y: hidden; padding: 0 0 40px; cursor: grab; scrollbar-color: var(--gold-lo) transparent; overscroll-behavior-x: contain; }
+.chain-stage.scroll.dragging { cursor: grabbing; }
+.chain-svg.wide { width: auto; height: min(80vh, 980px); max-width: none; }
+.chain-hint { text-align: center; margin: 16px auto 0; font-family: var(--f-display); font-style: italic; font-size: 18px; color: var(--text-3); }
+@media (max-width: 760px) { .chain-hint { display: none; } }
+/* Wide chart is drawn at about two-thirds scale, so its text is set larger to stay at 13px or more on screen */
+.chain-svg.wide { height: min(84vh, 1000px); }
+.chain-svg.wide .node .name { font-size: 21px; }
+.chain-svg.wide .node .date { font-size: 21px; }
+.chain-svg.wide .axis text { font-size: 20px; }
+.chain-svg.wide .band text { font-size: 20px; }
+.chain-svg.wide .band .yrs { font-size: 22px; }
+.chain-svg.wide .ad70 text { font-size: 21px; }
+.chain-svg.wide .node .mono-t { font-size: 40px; }
+.chain-svg.wide .node .mono-t.two { font-size: 32px; }
+/* "Kept his writings" threads in their own colour, a cool blue beside the golds */
+.chain-svg .edge.kept .vis { stroke: #86b8dc; opacity: .85; }
+.chain-hint { font-size: 22px; }
+@media (max-width: 1100px) { .chain-hint { font-size: 19px; } }
+/* Chain page: the intro on two lines, and a slightly larger legend */
+.chain-head .chain-lede { max-width: 900px; }
+.chain-legend { font-size: 20px; }
+@media (max-width: 760px) { .chain-legend { font-size: 17px; } }
+.chain-drawer .d-credit { display: block; margin: -6px 0 12px; font-size: 14px; color: var(--text-3); font-style: italic; }
+/* Rings: gold for Jesus, the apostles and the Gospel writers (ap: true), silver for everyone else */
+.chain-svg .node .ring { stroke: url(#silver); }
+.chain-svg .node .mono-t { fill: #d3d7dd; }
+.chain-svg .node:hover .halo, .chain-svg .node.sel .halo { fill: rgba(214, 218, 224, .1); }
+.chain-svg .node.root .ring, .chain-svg .node.apostle .ring { stroke: url(#gold-bright); }
+.chain-svg .node.apostle .ring { stroke-width: 3.2; filter: drop-shadow(0 0 5px rgba(240, 200, 110, .55)); }
+.chain-svg .node.apostle .halo { fill: rgba(242, 210, 140, .08); }
+.chain-svg .node.apostle:hover .halo, .chain-svg .node.apostle.sel .halo, .chain-svg .node.root:hover .halo, .chain-svg .node.root.sel .halo { fill: rgba(242, 220, 161, .14); }
+.chain-svg .node.apostle .name { fill: var(--gold-hi); }
+.chain-svg .node.apostle .mono-t { fill: #f2d48a; }

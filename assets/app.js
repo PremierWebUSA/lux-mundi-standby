@@ -49,16 +49,16 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794558433").then(() => ES && loadScript("data-js/es/index.js?v=1794558433").catch(() => {}));
+  const indexReady = loadScript("data-js/index.js?v=1794668646").then(() => ES && loadScript("data-js/es/index.js?v=1794668646").catch(() => {}));
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
   // (the glossary explains English terms, so Spanish pages go without it for now)
-  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794558433`)).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794558433`));
+  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794668646`)).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794668646`));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794558433`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794668646`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794558433").catch(rej);
+    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794668646").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
@@ -658,7 +658,7 @@
   ];
   const ERAS = [
     [-9999, 1, tr("Before his birth"), tr("The prophets, and the scrolls that preserved them")],
-    [1, 100, tr("The apostolic age"), tr("The lifetime of those who knew him")],
+    [1, 100, tr("The Word made flesh"), tr("His life, and the lifetime of those who knew him")],
     [100, 200, tr("The second century"), tr("The Fathers, the apologists and the first critics")],
     [200, 400, tr("Persecution and peace"), tr("From the house-churches to the councils")],
     [400, 1900, tr("The long memory"), tr("Late antiquity, Islam and the Middle Ages")],
@@ -684,7 +684,7 @@
     const ribbon = items.map((c) => {
       let pre = "";
       const e = ERAS.findIndex(([a, b]) => c.year >= a && c.year < b);
-      if (e !== era) { era = e; pre = `<div class="era-tick"><span>${esc(ERAS[e][2])}</span></div>`; }
+      if (e !== era) { era = e; pre = e === 1 ? `<div class="era-tick era-christ"><i class="era-mark">${CROSS}</i><span>${esc(ERAS[e][2])}</span></div>` : `<div class="era-tick"><span>${esc(ERAS[e][2])}</span></div>`; }
       return `${pre}<a class="tick" href="#/doc/${c.id}" style="${accent(c.section)}"><span class="tick-year">${esc(yearText(c.year))}</span><b>${esc(c.short)}</b><small>${esc(c.title)}</small></a>`;
     }).join("");
     const title = tr("The Greatest Story Ever Told");
@@ -699,7 +699,6 @@
           <p class="hero-sub">${tr("and the most closely examined. Here is every witness that survives, in their own words.")}</p>
         </div>
         ${credit("creation-of-adam", "hero-credit")}
-        <div class="scroll-cue" aria-hidden="true"></div>
       </section>
 
       <section class="section" id="begin">
@@ -711,13 +710,9 @@
           ${plate("emmaus", false, "(max-width: 860px) 62vw, 1240px")}
           <span class="caps">${tr("New here? Begin with the guided path")}</span>
           <b>${esc(window.PATH.title)}</b>
-          <span class="path-cta-lede">${esc(window.PATH.lede)}</span>
+          <span class="path-cta-lede"><span class="on-desk">${esc(window.PATH.lede)}</span><span class="on-phone">${esc(tr(window.PATH.card))}</span></span>
           <span class="link-gold">${tr("Begin")} <span class="arrow">→</span></span>
         </a>
-        <span class="caps studies-label reveal">${tr("Or begin with a study")}</span>
-        <div class="studies home-studies">${Object.entries(STUDY).map(([k, t], i) => `<a class="study glow reveal" href="#/${k}" style="--d:${i * 0.08}s">
-          ${plate(t.card, false, "(max-width: 640px) 90vw, (max-width: 1100px) 45vw, 300px")}
-          <span class="caps">${esc(t.kicker)}</span><b>${esc(t.title)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div>
       </section>
 
       ${FLOURISH}
@@ -749,6 +744,28 @@
       </section>
 
       ${FLOURISH}
+      <section class="section" id="witness-chain" style="padding-top:0">
+        <header class="section-head reveal">
+          <span class="caps">${tr("The Chain of Witnesses")}</span>
+          <h2 class="section-title">${tr("Who knew <em>whom</em>")}</h2>
+          <p class="section-lede">${tr("How the testimony about Jesus passed from hand to hand, from the apostles to the scholars of the third century. Each thread is a claim in an ancient source; tap one to read it.")}</p>
+        </header>
+        <div class="home-chain" id="homeChain"></div>
+        <p class="center reveal"><a class="link-gold" href="#/chain">${tr("The full chart")} <span class="arrow">→</span></a></p>
+      </section>
+
+      ${FLOURISH}
+      <section class="section" id="studies" style="padding-top:0">
+        <header class="section-head reveal">
+          <h2 class="section-title">${tr("Begin with a <em>study</em>")}</h2>
+          <p class="section-lede">${tr("Four studies, each gathering the sources on one subject.")}</p>
+        </header>
+        <div class="studies home-studies">${Object.entries(STUDY).map(([k, t], i) => `<a class="study glow reveal" href="#/${k}" style="--d:${i * 0.08}s">
+          ${plate(t.card, false, "(max-width: 640px) 90vw, (max-width: 1100px) 45vw, 300px")}
+          <span class="caps">${esc(t.kicker)}</span><b>${esc(t.title)}</b><span><span class="on-desk">${esc(t.blurb)}</span><span class="on-phone">${esc(t.short)}</span></span></a>`).join("")}</div>
+      </section>
+
+      ${FLOURISH}
       <section class="section" id="art" style="padding-top:0">
         <div class="invite">
           <div class="fan reveal">${["annunciation", "calling-matthew", "salvator-mundi", "emmaus", "pieta"].map((s, i) => `<a href="#/gallery/${s}" style="--k:${i - 2}" aria-label="${esc(ARTS[s]?.title)}"><img src="art/sm/${s}.webp" alt="" loading="lazy"></a>`).join("")}</div>
@@ -764,12 +781,13 @@
       ${footer()}`;
     setupHero();
     setupRibbon();
+    setupHomeChain();
   }
 
   /* Keep the gap between the two fingers at the heart of the screen. */
   function setupHero() {
     const img = $("#heroImg"), hero = $(".hero"), canvas = $("#motes");
-    const GAP = { x: 0.3775, y: 0.427 };
+    const GAP = { x: 0.3788, y: 0.4553 }; // midpoint between the two fingertips (measured 14 Nov 2026)
     let gx = 0, gy = 0;
     const fit = () => {
       if (!img.naturalWidth) return;
@@ -802,7 +820,7 @@
     const spawn = (fromGap) => {
       const a = Math.random() * Math.PI * 2, sp = 0.15 + Math.random() * 0.5;
       return fromGap
-        ? { x: gx, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.1, r: 0.8 + Math.random() * 1.8, life: 0, max: 160 + Math.random() * 200 }
+        ? { x: gx, y: gy, vx: Math.cos(a) * sp * 0.85, vy: (Math.sin(a) * sp - 0.1) * 0.85, r: 0.8 + Math.random() * 1.8, life: 0, max: (160 + Math.random() * 200) / 0.85 }
         : { x: Math.random() * hero.clientWidth, y: hero.clientHeight * (0.4 + Math.random() * 0.7), vx: (Math.random() - 0.5) * 0.15, vy: -0.12 - Math.random() * 0.3, r: 0.6 + Math.random() * 1.6, life: 0, max: 400 + Math.random() * 500 };
     };
     const small = innerWidth < 760, base = small ? 22 : 60, cap = small ? 40 : 110;
@@ -831,11 +849,86 @@
     }
     loop();
     cleanup.push(() => { cancelAnimationFrame(raf); io.disconnect(); visible = false; });
+    setupDrift(hero);
+  }
+
+  /* Home page only: a few slow motes of light drift up behind the rest of the page once the hero is scrolled past. */
+  function setupDrift(hero) {
+    const cv = document.createElement("canvas");
+    cv.className = "drift";
+    cv.setAttribute("aria-hidden", "true");
+    view.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    const size = () => { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; };
+    size();
+    addEventListener("resize", size);
+    const n = innerWidth < 760 ? 9 : 18;
+    const spawn = (anyY) => ({ x: Math.random() * innerWidth, y: anyY ? Math.random() * innerHeight : innerHeight + 10, vx: (Math.random() - 0.5) * 0.08, vy: -0.08 - Math.random() * 0.16, r: 0.6 + Math.random() * 1.3, life: 0, max: 900 + Math.random() * 900 });
+    const dots = Array.from({ length: n }, () => { const m = spawn(true); m.life = Math.random() * m.max; return m; });
+    let raf, on = false, lastY = scrollY;
+    function loop() {
+      if (!on) return;
+      const d = devicePixelRatio, dy = (scrollY - lastY) * 0.06;
+      lastY = scrollY;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.globalCompositeOperation = "lighter";
+      dots.forEach((m, i) => {
+        m.x += m.vx + Math.sin((m.life + i * 50) / 60) * 0.08; m.y += m.vy - dy; m.life++;
+        if (m.life > m.max || m.y < -20) Object.assign(m, spawn(false));
+        const k = Math.sin((m.life / m.max) * Math.PI) * 0.5;
+        const g = ctx.createRadialGradient(m.x * d, m.y * d, 0, m.x * d, m.y * d, m.r * 5 * d);
+        g.addColorStop(0, `rgba(255, 238, 190, ${k})`);
+        g.addColorStop(1, "rgba(255, 210, 140, 0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(m.x * d, m.y * d, m.r * 5 * d, 0, Math.PI * 2); ctx.fill();
+      });
+      raf = requestAnimationFrame(loop);
+    }
+    // Only while the hero (which has its own motes) is out of view.
+    const io = new IntersectionObserver(([en]) => { const was = on; on = !en.isIntersecting; cv.classList.toggle("on", on); if (on && !was) loop(); });
+    io.observe(hero);
+    cleanup.push(() => { on = false; cancelAnimationFrame(raf); io.disconnect(); removeEventListener("resize", size); cv.remove(); });
+  }
+
+  // The chart is only fetched when the reader nears it, so the home page loads no faster or slower for having it.
+  function setupHomeChain() {
+    const box = $("#homeChain");
+    if (!box) return;
+    const io = new IntersectionObserver(async ([en]) => {
+      if (!en.isIntersecting) return;
+      io.disconnect();
+      chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794668646").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794668646"));
+      try { await chainReady; } catch { return; }
+      if (!box.isConnected) return;
+      LUX.chain.render(box, new URLSearchParams("compact=1"), (f) => cleanup.push(f));
+      box.classList.add("ready");
+    }, { rootMargin: "900px 0px" });
+    io.observe(box);
+    cleanup.push(() => io.disconnect());
   }
 
   function setupRibbon() {
     const r = $("#ribbon");
     if (!r) return;
+    // "The Word made flesh" sits midway between the last words of the entry before it and the marker after it.
+    const era = $(".era-christ", r);
+    if (era) {
+      const centre = () => {
+        era.style.marginLeft = ""; era.style.paddingRight = "";
+        const prev = era.previousElementSibling?.querySelector("b"), next = era.nextElementSibling, label = $("span", era);
+        if (!prev || !next) return;
+        const rg = document.createRange(); rg.selectNodeContents(prev);
+        const left = Math.max(...[...rg.getClientRects()].map((q) => q.right)), t = label.getBoundingClientRect();
+        const gl = t.left - left, gr = next.getBoundingClientRect().left - t.right, want = Math.max(36, (gl + gr) / 2);
+        era.style.marginLeft = `${want - gl}px`;
+        era.style.paddingRight = `${parseFloat(getComputedStyle(era).paddingRight) + (want - gr)}px`;
+        const e = era.getBoundingClientRect(), l = label.getBoundingClientRect();
+        $(".era-mark", era).style.left = `${l.left + l.width / 2 - e.left}px`;
+      };
+      document.fonts.ready.then(centre);
+      addEventListener("resize", centre);
+      cleanup.push(() => removeEventListener("resize", centre));
+    }
     // Drag with the mouse, and let it glide to a stop when released.
     let down = false, sx = 0, sl = 0, moved = 0, vx = 0, lastX = 0, lastT = 0, glide;
     r.addEventListener("pointerdown", (e) => {
@@ -1255,7 +1348,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794558433`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794668646`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1271,7 +1364,7 @@
   const STOP_ES = new Set("que los las del por con una para como más pero sus les este esta ese esa entre cuando muy sin sobre también hasta hay donde quien desde todo nos durante todos uno les contra otros fue era han había ser son está estaba sido tiene tenía dijo dice les ellos ella ellas él".split(" "));
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794558433`);
+    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794668646`);
     const list = COMPARE || [];
     if (!slug) {
       document.title = `${tr("Compare the Accounts")} | The Jesus Archive`;
@@ -1330,10 +1423,10 @@
   /* ═════════════ STUDIES ═════════════ */
   // Four threads drawn through the whole archive. Their text lives in data-js/studies.js (from tools/studies/).
   const STUDY = {
-    life: { title: tr("The Life of Christ"), kicker: tr("The story"), banner: "baptism", card: "nativity-botticelli", blurb: tr("From Bethlehem to the empty tomb, each event with its Gospel passages and every other witness to it.") },
-    prophecies: { title: tr("Prophecy and Fulfilment"), kicker: tr("The promise"), banner: "isaiah-prophet", card: "isaiah", blurb: tr("What Israel’s prophets wrote, set beside what the Gospels record.") },
-    resurrection: { title: tr("The Resurrection"), kicker: tr("The evidence"), banner: "empty-tomb", card: "resurrection-raphael", blurb: tr("The death, the empty tomb, the witnesses and the first proclamation, gathered in one place.") },
-    manuscripts: { title: tr("How the Text Survived"), kicker: tr("The manuscripts"), banner: "st-jerome", card: "p46-1cor", blurb: tr("The papyri and great codices that carry the New Testament, beside the copies of other ancient books.") },
+    life: { title: tr("The Life of Christ"), kicker: tr("The story"), banner: "baptism", card: "nativity-botticelli", blurb: tr("From Bethlehem to the empty tomb, each event with its Gospel passages and every other witness to it."), short: tr("From Bethlehem to the empty tomb, with every witness.") },
+    prophecies: { title: tr("Prophecy and Fulfilment"), kicker: tr("The promise"), banner: "isaiah-prophet", card: "isaiah", blurb: tr("What Israel’s prophets wrote, set beside what the Gospels record."), short: tr("What the prophets wrote, beside what the Gospels record.") },
+    resurrection: { title: tr("The Resurrection"), kicker: tr("The evidence"), banner: "empty-tomb", card: "resurrection-raphael", blurb: tr("The death, the empty tomb, the witnesses and the first proclamation, gathered in one place."), short: tr("The death, the empty tomb and the first witnesses.") },
+    manuscripts: { title: tr("How the Text Survived"), kicker: tr("The manuscripts"), banner: "st-jerome", card: "p46-1cor", blurb: tr("The papyri and great codices that carry the New Testament, beside the copies of other ancient books."), short: tr("The papyri and codices that carried the New Testament to us.") },
   };
   const KINDS = { explicit: tr("Cited as fulfilled"), allusion: tr("Echoed"), typology: tr("Foreshadowed") };
   const paras = (ps, cls = "") => (ps || []).map((p) => `<p${cls ? ` class="${cls}"` : ""}>${esc(p)}</p>`).join("");
@@ -1454,7 +1547,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = `${tr("The Chain of Witnesses")} | The Jesus Archive`;
-    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794558433").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794558433"));
+    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794668646").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794668646"));
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">${tr("The chart could not be loaded.")}</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1487,7 +1580,7 @@
       <div class="map-legend"><h1 class="caps">${tr("The Map")}</h1><p>${tr("Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.")}</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">${tr("Where written")}</button><button type="button" data-layer="story">${tr("Places in the story")}</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794558433");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794668646");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1511,7 +1604,7 @@
         <path class="lakes" d="${GEO.lakes.map(ringPath).join("")}"/>
         <path class="rivers" d="${GEO.rivers.map(linePath).join("")}"/>
       </g></svg>
-      <div class="map-labels" aria-hidden="true">${[["Mare Nostrum", [17, 35.2]], ["Pontus Euxinus", [34, 43.3]], ["Aegyptus", [29.5, 26.5]], ["Italia", [13.5, 42.6]], ["Graecia", [22, 39.4]], ["Asia", [30, 38.7]], ["Syria", [38.8, 35.2]], ["Gallia", [2.5, 46.5]], ["Germania", [10, 51.5]], ["Arabia", [42, 27]]].map(([t, c]) => { const [x, y] = P(c); return `<span data-x="${x}" data-y="${y}">${t}</span>`; }).join("")}</div>
+      <div class="map-labels" aria-hidden="true">${[["Mare Nostrum", [17, 35.2], "Mediterranean Sea"], ["Pontus Euxinus", [34, 43.3], "Black Sea"], ["Aegyptus", [27.6, 27.4], "Egypt"], ["Italia", [15.9, 40.9], "Italy"], ["Graecia", [20.5, 40.7], "Greece"], ["Asia", [32.6, 39.2], "western Turkey"], ["Syria", [41.2, 32.4], "Syria and Lebanon"], ["Gallia", [1.6, 47.6], "France"], ["Germania", [10, 51.5], "Germany"], ["Arabia", [44, 26.5], "Arabian Peninsula"]].map(([t, c, now]) => { const [x, y] = P(c); return `<span data-x="${x}" data-y="${y}">${t}<small>(${tr(now)})</small></span>`; }).join("")}</div>
       <div class="map-pins">${places.map((p) => {
         const [x, y] = P([p.lon, p.lat]);
         const n = (counts[p.slug] || []).length;
@@ -1616,7 +1709,9 @@
     let era = -1, html = "";
     items.forEach((c) => {
       const e = ERAS.findIndex(([a, b]) => c.year >= a && c.year < b);
-      if (e !== era) { era = e; html += `<div class="tl-era reveal"><h2>${esc(ERAS[e][2])}</h2><p>${esc(ERAS[e][3])}</p></div>`; }
+      if (e !== era) { era = e; html += e === 1
+        ? `<div class="tl-era tl-christ reveal"><div class="ornament">${CROSS}</div><h2>${esc(ERAS[e][2])}</h2><blockquote>${tr("The Word became flesh, and lived among us.")}<cite>${tr("John 1:14")}</cite></blockquote><p>${esc(ERAS[e][3])}</p></div>`
+        : `<div class="tl-era reveal"><h2>${esc(ERAS[e][2])}</h2><p>${esc(ERAS[e][3])}</p></div>`; }
       html += `<div class="tl-item reveal" style="${accent(c.section)}"><a href="#/doc/${c.id}"><span class="tl-year">${esc(c.date || yearText(c.year))}</span><b>${esc(c.title)}</b><p>${esc(c.summary)}</p><span class="caps sec">${esc(SECTIONS[c.section]?.title || "")}</span></a></div>`;
     });
     view.innerHTML = `
@@ -1630,13 +1725,13 @@
   const QA_KEYS = new Set(["witnesses/tacitus-annals-15-44", "witnesses/josephus-antiquities-18", "archaeology/pilate-inscription", "study:resurrection"]);
   async function qaBlock(key) {
     if (!QA_KEYS.has(key)) return "";
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794558433`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794668646`).catch(() => {});
     const Q = window.PAGES?._qa?.[key];
     return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">${tr("Questions and answers")}</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
   }
 
   async function renderPage(k) {
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794558433`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794668646`).catch(() => {});
     const P = window.PAGES?.[k];
     if (!P) return renderLost();
     document.title = `${P.title} | The Jesus Archive`;
@@ -1649,7 +1744,7 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = `${tr("The Gallery")} | The Jesus Archive`;
-    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794558433" : "assets/stories.js?v=1794558433").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794668646" : "assets/stories.js?v=1794668646").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
@@ -1772,7 +1867,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794558433").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794668646").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
