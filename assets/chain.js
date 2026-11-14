@@ -268,8 +268,8 @@ function render(view, params, onCleanup) {
   // compact=1: the chart alone, for the home page (that page gives its own heading).
   const compact = params.get("compact") === "1";
   // The chain page shows the full chart; the home page keeps the original figures. Figures marked `more` appear only
-  // in the full chart, and only in English until their Spanish wording exists.
-  const full = !compact && !CH_ES;
+  // in the full chart.
+  const full = !compact;
   const N = Object.fromEntries(Object.entries(N_ALL).filter(([, n]) => full || !n.more));
   const E = E_ALL.filter((e) => full || !e.more);
   const yMax = Math.max(250, ...Object.values(N).map((n) => (n.yr > 250 ? 330 : 250)));
