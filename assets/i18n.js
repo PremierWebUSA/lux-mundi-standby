@@ -255,7 +255,7 @@
     "Stops": "Paradas",
     "The witnesses have spoken.": "Los testigos han hablado.",
     "Every testimony in this archive is open to you, in their own words.": "Todos los testimonios de este archivo están a su disposición, tal como fueron escritos.",
-    "Enter the seven halls": "Entrar en las siete salas",
+    "Enter the six halls": "Entrar en las seis salas",
     "Walk the timeline": "Recorrer la cronología",
     "Previous stop:": "Parada anterior:",
     "The close ↓": "El cierre ↓",
