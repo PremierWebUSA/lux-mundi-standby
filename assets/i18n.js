@@ -71,7 +71,7 @@
     "Begin with a <em>study</em>": "Empiece por un <em>estudio</em>",
     "Four studies, each gathering the sources on one subject.": "Cuatro estudios, cada uno con las fuentes sobre un tema.",
     "The testimony": "El testimonio",
-    "Seven <em>halls</em> of witness": "Siete <em>salas</em>, un mismo testimonio",
+    "Six <em>halls</em> of witness": "Seis <em>salas</em>, un mismo testimonio",
     "Each hall holds one kind of witness. The writings in each are arranged in the order in which they were written.": "Cada sala reúne un tipo de testigo, y dentro de cada una los escritos aparecen en el orden en que fueron redactados.",
     "Scripture": "Escritura",
     "Witnesses": "Testigos",
