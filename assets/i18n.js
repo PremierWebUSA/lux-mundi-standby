@@ -81,7 +81,7 @@
     "Enter": "Entrar",
     "Through the centuries": "A través de los siglos",
     "Two thousand <em>years</em>": "Veinte <em>siglos</em> de testimonio",
-    "From the Isaiah scroll copied before his birth to statements issued in our own decade. Drag through the years.": "Desde el rollo de Isaías, copiado antes de que él naciera, hasta documentos publicados en esta misma década. Deslice para recorrer los siglos.",
+    "From the Isaiah scroll copied before his birth to the writings of late antiquity. Drag through the years.": "Desde el rollo de Isaías, copiado antes de que él naciera, hasta los escritos de la Antigüedad tardía. Deslice para recorrer los siglos.",
     "The full timeline": "Ver la cronología completa",
     "Glory to God Alone": "Solo a Dios la gloria",
     "The art in these halls": "El arte que acompaña al archivo",
