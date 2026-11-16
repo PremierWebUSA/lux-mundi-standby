@@ -49,23 +49,23 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1794792807").then(() => ES && loadScript("data-js/es/index.js?v=1794792807").catch(() => {}));
+  const indexReady = loadScript("data-js/index.js?v=1794795544").then(() => ES && loadScript("data-js/es/index.js?v=1794795544").catch(() => {}));
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
   // (the glossary explains English terms, so Spanish pages go without it for now)
-  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794792807`)).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794792807`));
+  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1794795544`)).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1794795544`));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794792807`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1794795544`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794792807").catch(rej);
+    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1794795544").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
   function prep() {
     CARDS = INDEX.docs;
     (INDEX.extraArt || []).forEach((a) => (ARTS[a.slug] ||= a));
-    // The 210 reference cards are rebuilt here from the register rather than shipped twice.
+    // The 209 reference cards are rebuilt here from the register rather than shipped twice.
     INDEX.references.forEach((r) => {
       CARDS["citations/" + r.id] ||= { id: "citations/" + r.id, title: r.citation, short: r.id, author: null, date: "", year: null, kind: "source",
         summary: r.note || "", section: "sources", group: r.section_title || "", plate: "st-jerome", words: 0, curated: true };
@@ -735,7 +735,7 @@
         <header class="section-head reveal">
           
           <span class="caps">${tr("Through the centuries")}</span>
-          <h2 class="section-title">${tr("Two thousand <em>years</em>")}</h2>
+          <h2 class="section-title">${tr("Century by <em>century</em>")}</h2>
           <p class="section-lede">${tr("From the Isaiah scroll copied before his birth to the writings of late antiquity. Drag through the years.")}</p>
         </header>
         <div class="ribbon-wrap reveal"><div class="ribbon" id="ribbon">${ribbon}</div></div>
@@ -840,7 +840,7 @@
         const k = Math.sin((m.life / m.max) * Math.PI);
         const g = ctx.createRadialGradient(m.x * d, m.y * d, 0, m.x * d, m.y * d, m.r * 5 * d);
         g.addColorStop(0, `rgba(255, 238, 190, ${0.75 * k})`);
-        g.addColorStop(1, "rgba(255, 210, 140, 0)");
+        g.addColorStop(1, "rgba(255, 209, 140, 0)");
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(m.x * d, m.y * d, m.r * 5 * d, 0, Math.PI * 2); ctx.fill();
       }
@@ -877,7 +877,7 @@
         const k = Math.sin((m.life / m.max) * Math.PI) * 0.5;
         const g = ctx.createRadialGradient(m.x * d, m.y * d, 0, m.x * d, m.y * d, m.r * 5 * d);
         g.addColorStop(0, `rgba(255, 238, 190, ${k})`);
-        g.addColorStop(1, "rgba(255, 210, 140, 0)");
+        g.addColorStop(1, "rgba(255, 209, 140, 0)");
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(m.x * d, m.y * d, m.r * 5 * d, 0, Math.PI * 2); ctx.fill();
       });
@@ -896,7 +896,7 @@
     const io = new IntersectionObserver(async ([en]) => {
       if (!en.isIntersecting) return;
       io.disconnect();
-      chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794792807").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794792807"));
+      chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794795544").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794795544"));
       try { await chainReady; } catch { return; }
       if (!box.isConnected) return;
       LUX.chain.render(box, new URLSearchParams("compact=1"), (f) => cleanup.push(f));
@@ -1347,7 +1347,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1794792807`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1794795544`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1363,7 +1363,7 @@
   const STOP_ES = new Set("que los las del por con una para como más pero sus les este esta ese esa entre cuando muy sin sobre también hasta hay donde quien desde todo nos durante todos uno les contra otros fue era han había ser son está estaba sido tiene tenía dijo dice les ellos ella ellas él".split(" "));
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794792807`);
+    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1794795544`);
     const list = COMPARE || [];
     if (!slug) {
       document.title = `${tr("Compare the Accounts")} | The Jesus Archive`;
@@ -1546,7 +1546,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = `${tr("The Chain of Witnesses")} | The Jesus Archive`;
-    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794792807").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794792807"));
+    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1794795544").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1794795544"));
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">${tr("The chart could not be loaded.")}</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1579,7 +1579,7 @@
       <div class="map-legend"><h1 class="caps">${tr("The Map")}</h1><p>${tr("Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.")}</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">${tr("Where written")}</button><button type="button" data-layer="story">${tr("Places in the story")}</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1794792807");
+    if (!GEO) await loadScript("data-js/geo.js?v=1794795544");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1724,13 +1724,13 @@
   const QA_KEYS = new Set(["witnesses/tacitus-annals-15-44", "witnesses/josephus-antiquities-18", "archaeology/pilate-inscription", "study:resurrection"]);
   async function qaBlock(key) {
     if (!QA_KEYS.has(key)) return "";
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794792807`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794795544`).catch(() => {});
     const Q = window.PAGES?._qa?.[key];
     return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">${tr("Questions and answers")}</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
   }
 
   async function renderPage(k) {
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794792807`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1794795544`).catch(() => {});
     const P = window.PAGES?.[k];
     if (!P) return renderLost();
     document.title = `${P.title} | The Jesus Archive`;
@@ -1743,7 +1743,7 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = `${tr("The Gallery")} | The Jesus Archive`;
-    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794792807" : "assets/stories.js?v=1794792807").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1794795544" : "assets/stories.js?v=1794795544").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
@@ -1866,7 +1866,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794792807").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1794795544").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
