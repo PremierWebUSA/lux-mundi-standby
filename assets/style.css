@@ -1670,3 +1670,23 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .chain-svg .node.apostle:hover .halo, .chain-svg .node.apostle.sel .halo, .chain-svg .node.root:hover .halo, .chain-svg .node.root.sel .halo { fill: rgba(242, 220, 161, .14); }
 .chain-svg .node.apostle .name { fill: var(--gold-hi); }
 .chain-svg .node.apostle .mono-t { fill: #f2d48a; }
+
+/* Home spacing (16 Nov 2026): halls lede to first row 60px; last hall card to the next ornament 110px */
+#testimony .section-head { margin-bottom: 60px; }
+#testimony { padding-bottom: 110px; }                        /* 8: last hall card to ornament 120 */
+#testimony .hall-row:last-child { margin-bottom: 0; }
+/* Home spacing, round 2 (16 Nov 2026), gap numbers from research/spacing */
+#centuries .section-head { margin-bottom: 40px; }            /* 10: heading to timeline 70 */
+#centuries { padding-bottom: 92px; }                         /* 12: timeline button to ornament 120 */
+#witness-chain { padding-bottom: 92px; }                     /* 16: chart button to ornament 120 */
+#studies .section-head { margin-bottom: 70px; }              /* 18: heading to study cards 70 */
+#studies { padding-bottom: 110px; }                          /* 19: study cards to ornament 120 */
+#centuries > p.center, #witness-chain > p.center { position: relative; z-index: 4; }
+@media (min-width: 761px) {
+  #centuries .ribbon { padding-bottom: 8px; }
+  #centuries > p.center { margin-top: -30px; }              /* 11: timeline titles to button 100 */
+}
+#begin { padding-bottom: 70px; }                             /* 3: Start Here card to ornament 110 */
+.home-chain .chain-stage { padding-bottom: 0; }               /* the chart's unused bottom space, home only */
+#witness-chain > p.center { margin-top: 53px; }              /* 15: chart years to button 55 */
+@media (max-width: 760px) { #witness-chain > p.center { margin-top: 45px; } } /* 15 on phones: chart to button 70 */
