@@ -11,7 +11,7 @@ window.PATH = {
     },
     {
       doc: "scripture/new-testament/09-galatians", date: "c. AD 50", plate: "p46-gal", p: 0, title: "Paul meets Peter and James",
-      bridge: "Three years after his conversion, Paul went to Jerusalem and stayed fifteen days with Peter, and he also met “James, the Lord’s brother.” This is <em>first-hand testimony</em> from a letter whose authenticity almost no historian disputes."
+      bridge: "Three years after his conversion, Paul went to Jerusalem and stayed fifteen days with Peter, and he also met “James, the Lord’s brother.” This is <em>first-hand testimony</em> from a letter whose authenticity almost no historian disputes. In the Bible a brother can also be a close kinsman, and the early Church Fathers held that Mary remained ever a virgin: Epiphanius took James as a son of Joseph by an earlier marriage, Jerome as a cousin of Jesus."
     },
     {
       doc: "scripture/new-testament/02-mark", date: "c. AD 70", plate: "alex-mark", p: 1, title: "The first Gospel",
@@ -30,8 +30,8 @@ window.PATH = {
       bridge: "Writing in Rome around AD 93, the Jewish historian Josephus described Jesus as a wise man and a doer of startling deeds, condemned by Pilate. Most scholars hold that <em>the authentic core of this passage remains</em>: the testimony of a non-Christian writer of the first century."
     },
     {
-      doc: "witnesses/josephus-antiquities-20", date: "c. AD 93", plate: "jos-cologne", p: 0, title: "His brother James",
-      bridge: "In a second passage, <em>accepted as genuine by nearly all scholars</em>, Josephus records the illegal execution of James in AD 62, and identifies him in passing as “the brother of Jesus who was called Christ.” That he mentions Jesus without explanation suggests his readers already knew whom he meant."
+      doc: "witnesses/josephus-antiquities-20", date: "c. AD 93", plate: "jos-cologne", p: 0, title: "James, the Lord’s brother",
+      bridge: "In a second passage, <em>accepted as genuine by nearly all scholars</em>, Josephus records the illegal execution of James in AD 62, and identifies him in passing as “the brother of Jesus who was called Christ.” That he mentions Jesus without explanation suggests his readers already knew whom he meant. In the Bible a brother can also be a close kinsman, and the early Church Fathers held that Mary remained ever a virgin: Epiphanius took James as a son of Joseph by an earlier marriage, Jerome as a cousin of Jesus."
     },
     {
       doc: "legal/pliny-trajan-letters-10-96-97", date: "c. AD 112", plate: "pliny-ms", p: 0, title: "A Roman governor’s report",

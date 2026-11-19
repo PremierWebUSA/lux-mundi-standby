@@ -53,7 +53,7 @@ LUX.notes({
     { at: "For I delivered to you first of all", kick: "An early creed", body: "Paul passes on a formula he had himself been taught. Most scholars date it to within a few years of the crucifixion." },
     { at: "he appeared to Cephas", kick: "Cephas", body: "Aramaic for “rock”: Peter. Paul had stayed with him in Jerusalem for fifteen days (Galatians 1:18).", see: ["Peter", "/people/peter"] },
     { at: "most of whom remain until now", kick: "Ask them", body: "Paul points out that most of the five hundred were still alive, and could be asked." },
-    { at: "Then he appeared to James", kick: "James", body: "The brother of Jesus, later leader of the Jerusalem church, whose death Josephus records.", see: ["Josephus, Antiquities 20", "/witnesses/josephus-antiquities-20"] },
+    { at: "Then he appeared to James", kick: "James", body: "“The brother of the Lord”, a kinsman in the biblical sense, later leader of the Jerusalem church, whose death Josephus records.", see: ["Josephus, Antiquities 20", "/witnesses/josephus-antiquities-20"] },
     { at: "Aquila and Priscilla", kick: "Expelled from Rome", body: "The couple who had left Rome when Claudius expelled the Jews (Acts 18:2), the event Suetonius records.", see: ["Suetonius, Claudius 25", "/witnesses/suetonius-claudius-25"] },
     { at: "with my own hand", kick: "Signed", body: "Paul dictated his letters to a scribe and added the closing greeting himself (compare Galatians 6:11)." },
     { at: "Come, Lord!", kick: "Marana tha", body: "Paul's Greek keeps the Aramaic words, a prayer from the earliest Aramaic-speaking church." },
@@ -71,7 +71,7 @@ LUX.notes({
     { at: "The beginning of the Good News", kick: "Written c. AD 65–75", body: "Probably the earliest Gospel. Papias, writing c. AD 110–130, says Mark set down what Peter remembered.", see: ["Papias", "/fathers/papias-fragments"] },
     { at: "Talitha cumi!", kick: "Aramaic", body: "Mark keeps several of Jesus's words in his own language, Aramaic, and translates them for Greek readers." },
     { at: "the father of Alexander and Rufus", kick: "Known names", body: "Naming the sons suggests Mark's readers knew them. Paul greets a Rufus in Rome (Romans 16:13)." },
-    { at: "They said nothing to anyone", kick: "The ending", body: "The two oldest complete manuscripts, Sinaiticus and Vaticanus, end the Gospel here. Verses 9–20 are a later addition.", see: ["How the text survived", "/manuscripts"] },
+    { at: "They said nothing to anyone", kick: "The ending", body: "The two oldest complete manuscripts, Sinaiticus and Vaticanus, end the Gospel here. Verses 9–20, already quoted by Irenaeus in the second century (Against Heresies 3.10.5), are absent from them.", see: ["How the text survived", "/manuscripts"] },
   ],
 
   "scripture/new-testament/03-luke": [

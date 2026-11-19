@@ -1690,3 +1690,12 @@ ol.story::before { content: ""; position: absolute; left: 210px; top: 8px; botto
 .home-chain .chain-stage { padding-bottom: 0; }               /* the chart's unused bottom space, home only */
 #witness-chain > p.center { margin-top: 53px; }              /* 15: chart years to button 55 */
 @media (max-width: 760px) { #witness-chain > p.center { margin-top: 45px; } } /* 15 on phones: chart to button 70 */
+
+/* Verse pop-up (hover or tap shows the Bible text) and lists inside an intro (18 Nov 2026) */
+.vq { text-decoration: underline dotted rgba(212, 176, 102, .7); text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: help; border-radius: 2px; }
+.vq:hover, .vq:focus-visible { color: var(--gold-hi); outline: none; }
+.refcard .vq-text { font-style: italic; font-size: 16.5px; line-height: 1.5; }
+.intro ul { font-size: clamp(19px, 1.6vw, 21.5px); line-height: 1.7; color: var(--text); margin: 0 0 1.1em; padding-left: 1.2em; }
+.intro ul li { margin: 0 0 .6em; }
+.intro ul li::marker { color: var(--gold); }
+@media print { .intro ul { color: #111; font-size: 11.5pt; } }
