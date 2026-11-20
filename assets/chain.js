@@ -228,21 +228,21 @@ const PEOPLE = { jesus: "jesus", "mary-magdalene": "mary", "james-the-just": "ja
 const GR = { 1: "In the earliest sources", 2: "Student or near-contemporary", 3: "Later tradition or disputed" };
 // Where a thread's quotation can be read on this site (first match wins; no link if the work isn't here).
 const SRC = [
-  [/Church History (\d)\./, (m) => ["1", "3", "4", "5"].includes(m[1]) && [`fathers/eusebius-he-${m[1]}`, CH_ES ? `Eusebio, Historia eclesiástica, libro ${m[1]}` : `Eusebius, Church History, Book ${m[1]}`]],
-  [/Against Heresies (\d)\./, (m) => ["1", "3"].includes(m[1]) && [`fathers/irenaeus-ah-${m[1]}`, CH_ES ? `Ireneo, Contra las herejías, libro ${m[1]}` : `Irenaeus, Against Heresies, Book ${m[1]}`]],
-  [/1 Corinthians/, () => ["scripture/new-testament/07-1-corinthians", CH_ES ? "1 Corintios" : "1 Corinthians"]],
-  [/Galatians/, () => ["scripture/new-testament/09-galatians", CH_ES ? "Gálatas" : "Galatians"]],
-  [/Colossians/, () => ["scripture/new-testament/12-colossians", "Colossians"]],
-  [/Philemon/, () => ["scripture/new-testament/18-philemon", "Philemon"]],
-  [/^John /, () => ["scripture/new-testament/04-john", CH_ES ? "el Evangelio según Juan" : "the Gospel of John"]],
-  [/Romans/, () => ["scripture/new-testament/06-romans", CH_ES ? "Romanos" : "Romans"]],
-  [/2 Corinthians/, () => ["scripture/new-testament/08-2-corinthians", CH_ES ? "2 Corintios" : "2 Corinthians"]],
-  [/^Acts /, () => ["scripture/new-testament/05-acts", CH_ES ? "Hechos" : "Acts"]],
-  [/Philippians/, () => ["scripture/new-testament/11-philippians", CH_ES ? "Filipenses" : "Philippians"]],
-  [/1 Thessalonians/, () => ["scripture/new-testament/13-1-thessalonians", CH_ES ? "1 Tesalonicenses" : "1 Thessalonians"]],
-  [/^1 Peter/, () => ["scripture/new-testament/21-1-peter", CH_ES ? "1 Pedro" : "1 Peter"]],
-  [/^2 Timothy/, () => ["scripture/new-testament/16-2-timothy", CH_ES ? "2 Timoteo" : "2 Timothy"]],
-  [/^Mark /, () => ["scripture/new-testament/02-mark", CH_ES ? "el Evangelio según Marcos" : "the Gospel of Mark"]],
+  [/Church History (\d)\./, (m) => ["1", "3", "4", "5"].includes(m[1]) && [`fathers/eusebius-he-${m[1]}`, CH_PT ? `Eusébio, História eclesiástica, livro ${m[1]}` : CH_ES ? `Eusebio, Historia eclesiástica, libro ${m[1]}` : `Eusebius, Church History, Book ${m[1]}`]],
+  [/Against Heresies (\d)\./, (m) => ["1", "3"].includes(m[1]) && [`fathers/irenaeus-ah-${m[1]}`, CH_PT ? `Irineu, Contra as heresias, livro ${m[1]}` : CH_ES ? `Ireneo, Contra las herejías, libro ${m[1]}` : `Irenaeus, Against Heresies, Book ${m[1]}`]],
+  [/1 Corinthians/, () => ["scripture/new-testament/07-1-corinthians", CH_PT ? "1 Coríntios" : CH_ES ? "1 Corintios" : "1 Corinthians"]],
+  [/Galatians/, () => ["scripture/new-testament/09-galatians", CH_PT ? "Gálatas" : CH_ES ? "Gálatas" : "Galatians"]],
+  [/Colossians/, () => ["scripture/new-testament/12-colossians", CH_PT ? "Colossenses" : CH_ES ? "Colosenses" : "Colossians"]],
+  [/Philemon/, () => ["scripture/new-testament/18-philemon", CH_PT ? "Filemom" : CH_ES ? "Filemón" : "Philemon"]],
+  [/^John /, () => ["scripture/new-testament/04-john", CH_PT ? "o Evangelho de João" : CH_ES ? "el Evangelio según Juan" : "the Gospel of John"]],
+  [/Romans/, () => ["scripture/new-testament/06-romans", CH_PT ? "Romanos" : CH_ES ? "Romanos" : "Romans"]],
+  [/2 Corinthians/, () => ["scripture/new-testament/08-2-corinthians", CH_PT ? "2 Coríntios" : CH_ES ? "2 Corintios" : "2 Corinthians"]],
+  [/^Acts /, () => ["scripture/new-testament/05-acts", CH_PT ? "Atos" : CH_ES ? "Hechos" : "Acts"]],
+  [/Philippians/, () => ["scripture/new-testament/11-philippians", CH_PT ? "Filipenses" : CH_ES ? "Filipenses" : "Philippians"]],
+  [/1 Thessalonians/, () => ["scripture/new-testament/13-1-thessalonians", CH_PT ? "1 Tessalonicenses" : CH_ES ? "1 Tesalonicenses" : "1 Thessalonians"]],
+  [/^1 Peter/, () => ["scripture/new-testament/21-1-peter", CH_PT ? "1 Pedro" : CH_ES ? "1 Pedro" : "1 Peter"]],
+  [/^2 Timothy/, () => ["scripture/new-testament/16-2-timothy", CH_PT ? "2 Timóteo" : CH_ES ? "2 Timoteo" : "2 Timothy"]],
+  [/^Mark /, () => ["scripture/new-testament/02-mark", CH_PT ? "o Evangelho de Marcos" : CH_ES ? "el Evangelio según Marcos" : "the Gospel of Mark"]],
 ];
 const sourceOf = (cite) => { for (const [re, f] of SRC) { const m = cite.match(re); if (m) return f(m) || null; } return null; };
 const PAGE_OF = Object.fromEntries(Object.entries(PEOPLE).map(([slug, id]) => [id, slug]));
@@ -250,9 +250,9 @@ const personLink = (id) => PAGE_OF[id] ? `<a class="d-link" href="#/p/${PAGE_OF[
 
 const ERAS = [["The Lord", 6, 40, "c. 30"], ["The Apostolic Age", 40, 90, "30–90"], ["After the Apostles", 90, 140, "90–140"], ["The Second Century", 140, 195, "140–195"], ["The Third Century", 195, 250, "195–250"], ["Towards Nicaea", 250, 330, "250–330"]];
 const CHAINS = [["jesus,john,polycarp,irenaeus", "John to Irenaeus"], ["jesus,peter,mark", "Peter and Mark"], ["jesus,paul,luke,mark", "Paul's circle"], ["peter,paul,clement", "The church at Rome"], ["pantaenus,clementA,origen", "Alexandria"]];
-// Spanish pages load data-js/es/chain.js first (window.CHAIN_ES): names, dates, biographies, the threads' texts
+// Spanish and Portuguese pages load data-js/<lang>/chain.js first (window.CHAIN_ES): names, dates, biographies, the threads' texts
 // and the page's own wording. The English citation is kept for finding the source page.
-const CH_ES = window.LANG === "es" ? window.CHAIN_ES : null, S = (x) => CH_ES?.strings?.[x] ?? x;
+const CH_ES = window.LANG !== "en" && window.LANG ? window.CHAIN_ES : null, CH_PT = window.LANG === "pt" && !!CH_ES, S = (x) => CH_ES?.strings?.[x] ?? x;
 if (CH_ES) {
   for (const [k, v] of Object.entries(CH_ES.nodes || {})) if (N_ALL[k]) Object.assign(N_ALL[k], v);
   (CH_ES.edges || []).forEach((v, i) => { if (E_ALL[i]) { E_ALL[i].citeEn = E_ALL[i].cite; Object.assign(E_ALL[i], v); } });
@@ -260,7 +260,7 @@ if (CH_ES) {
   CHAINS.forEach((c) => (c[1] = S(c[1])));
   for (const k in GR) GR[k] = S(GR[k]);
 }
-const ad = (y) => (CH_ES ? `${y} d. C.` : `AD ${y}`);
+const ad = (y) => (CH_PT ? `${y} d.C.` : CH_ES ? `${y} d. C.` : `AD ${y}`);
 const NS = "http://www.w3.org/2000/svg";
 const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
 
@@ -433,7 +433,7 @@ function render(view, params, onCleanup) {
       el("circle", { r, class: "ring" }, g);
       // On phones long names break onto two lines and labels are kept inside the chart's edges.
       const of = CH_ES ? " de " : " of ";
-      const and = CH_ES ? " y " : " and ", brk = n.name.includes(of) ? of : n.name.includes(and) ? and : null;
+      const and = CH_PT ? " e " : CH_ES ? " y " : " and ", brk = n.name.includes(of) ? of : n.name.includes(and) ? and : null;
       const lines = vert && n.name.length > 12 && brk ? [n.name.slice(0, n.name.indexOf(brk)), n.name.slice(n.name.indexOf(brk) + 1)] : [n.name];
       const fs = vert ? (n.root ? 19 : 16.5) : 0;
       const est = vert ? Math.max(...lines.map((l) => l.length)) * fs * .78 : 0;

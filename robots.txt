@@ -16,3 +16,4 @@ Allow: /
 
 Sitemap: https://thejesusarchive.com/sitemap.xml
 Sitemap: https://thejesusarchive.com/sitemap-es.xml
+Sitemap: https://thejesusarchive.com/sitemap-pt.xml

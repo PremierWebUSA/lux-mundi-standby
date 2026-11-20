@@ -9,17 +9,20 @@
 (() => {
   "use strict";
 
-  /* ───────── language: pages under /es/ are Spanish (assets/i18n.js) ───────── */
-  const ES = window.LANG === "es", tr = window.t || ((x) => x);
-  const LOCALE = ES ? "es-419" : "en-US";
+  /* ───────── language: pages under /es/ are Spanish, under /pt/ Brazilian Portuguese (assets/i18n.js) ─────────
+     ES is true on any translated page (Spanish or Portuguese); LG says which. */
+  const LG = window.LANG || "en", ES = LG !== "en", PT = LG === "pt", tr = window.t || ((x) => x);
+  const LOCALE = { es: "es-419", pt: "pt-BR" }[LG] || "en-US";
+  const PFX = "/" + LG, LG_RE = new RegExp(`^\\/${LG}(?=\\/|$)`);
+  const langOf = (u) => (u.match(/^\/(es|pt)(?=\/|$|\?|#)/) || [])[1] || "en";
   // Pages that exist in Spanish (from data-js/index.js); filled in prep().
   let ES_PAGES = new Set(), ES_INDEX = null;
-  const isEs = (u) => /^\/es(\/|$|\?)/.test(u);
+  const isEs = (u) => langOf(u) !== "en";
   // An English address, turned into its Spanish twin when this is a Spanish page and the twin exists.
   const loc = (u) => {
     if (!ES || !u.startsWith("/") || isEs(u)) return u;
     const i = u.search(/[?#]/), path = i < 0 ? u : u.slice(0, i), rest = i < 0 ? "" : u.slice(i);
-    return ES_PAGES.has(path) ? (path === "/" ? "/es/" : "/es" + path) + rest : u;
+    return ES_PAGES.has(path) ? (path === "/" ? PFX + "/" : PFX + path) + rest : u;
   };
 
   /* ───────── data (loaded as scripts so the site works from file://) ───────── */
@@ -49,16 +52,16 @@
     s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
     document.head.appendChild(s);
   });
-  const indexReady = loadScript("data-js/index.js?v=1795128513").then(() => ES && loadScript("data-js/es/index.js?v=1795128513").catch(() => {}));
+  const indexReady = loadScript("data-js/index.js?v=1795154348").then(() => ES && loadScript(`data-js/${LG}/index.js?v=1795154348`).catch(() => {}));
   // 6: the glossary arrives after the page and marks its terms wherever the archive explains rather than quotes.
-  // (the glossary explains English terms, so Spanish pages go without it for now)
-  indexReady.then(() => loadScript(`data-js/${ES ? "es/" : ""}glossary.js?v=1795128513`)).then(() => gloss()).catch(() => {});
-  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? "es/" : ""}studies.js?v=1795128513`));
+  // (each language has its own glossary: data-js/glossary.js, data-js/es/glossary.js, data-js/pt/glossary.js)
+  indexReady.then(() => loadScript(`data-js/${ES ? LG + "/" : ""}glossary.js?v=1795154348`)).then(() => gloss()).catch(() => {});
+  const getStudies = () => (STUDIES ? Promise.resolve() : loadScript(`data-js/${ES ? LG + "/" : ""}studies.js?v=1795154348`));
   let searchReady = null;
-  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? "es/" : ""}search.js?v=1795128513`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
+  const getSearch = () => (searchReady ||= loadScript(`data-js/${ES ? LG + "/" : ""}search.js?v=1795154348`).then(() => SEARCH.forEach((d) => { d.tl = d.t.toLowerCase(); d.xl = d.x.toLowerCase(); })));
   const getDoc = (id) => LUX.docs[id] ? Promise.resolve(LUX.docs[id]) : new Promise((res, rej) => {
     (LUX.waiting[id] ||= []).push(res);
-    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? "es/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1795128513").catch(rej);
+    loadScript(`data-js/${ES && ES_PAGES.has("/" + id) ? LG + "/" : ""}doc/` + id.replaceAll("/", "__") + ".js?v=1795154348").catch(rej);
   });
 
   let SECTIONS = {}, ORDER = {}, REFS = {}, CARDS = {}, ENT = {}, IN_DOC = {};
@@ -79,7 +82,7 @@
     (INDEX.people || []).forEach((e) => (ENT[e.slug] = Object.assign(e, { kind: "person" })));
     (INDEX.places || []).forEach((e) => (ENT[e.slug] = Object.assign(e, { kind: "place" })));
     Object.values(ENT).forEach((e) => (e.mentions || []).forEach(([d, n]) => (IN_DOC[d] ||= []).push([e.slug, n])));
-    ES_PAGES = new Set(INDEX.es || []);
+    ES_PAGES = new Set(INDEX[LG] || []);
     if (ES && ES_INDEX) {
       // Spanish titles, dates and section names over the English index (data-js/es/index.js).
       for (const [id, c] of Object.entries(ES_INDEX.cards || {})) if (CARDS[id]) Object.assign(CARDS[id], c);
@@ -99,6 +102,8 @@
       // People and places, and the works of art, in Spanish (names, roles, regions, biographies, titles, verses).
       for (const k of ["people", "places"]) for (const e of INDEX[k] || []) Object.assign(e, ES_INDEX[k]?.[e.slug] || {});
       for (const a of [...ART, ...(INDEX.extraArt || [])]) Object.assign(a, ES_INDEX.art?.[a.slug] || {});
+      // Titles of the side-by-side readings, as listed on each document page.
+      for (const c of INDEX.comparisons || []) if (ES_INDEX.comparisons?.[c.slug]) c.title = ES_INDEX.comparisons[c.slug];
     }
     // Header links go to the Spanish page where there is one; the language switch shows when there is a twin.
     $$("#bar a[href^='/']").forEach((a) => a.setAttribute("href", loc(a.getAttribute("href"))));
@@ -112,7 +117,7 @@
   const ARTS = Object.fromEntries(ART.map((a) => [a.slug, a]));
   const fmt = (n) => Number(n).toLocaleString(LOCALE);
   const roman = (n) => { let r = ""; for (const [v, s] of [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]) while (n >= v) (r += s), (n -= v); return r; };
-  const yearText = (y) => (y == null ? "" : y < 0 ? (ES ? `${-y} a. C.` : `${-y} BC`) : y < 1000 ? (ES ? `${y} d. C.` : `AD ${y}`) : String(y));
+  const yearText = (y) => (y == null ? "" : y < 0 ? (PT ? `${-y} a.C.` : ES ? `${-y} a. C.` : `${-y} BC`) : y < 1000 ? (PT ? `${y} d.C.` : ES ? `${y} d. C.` : `AD ${y}`) : String(y));
   const minutes = (w) => Math.max(1, Math.round(w / 230));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const view = $("#view"), bar = $("#bar");
@@ -194,7 +199,7 @@
   // The current address, read back into the internal route form: { parts: [kind, ...rest], params }.
   function parseHash() {
     const params = new URLSearchParams(location.search);
-    const parts = (ES ? location.pathname.replace(/^\/es(?=\/|$)/, "") : location.pathname).split("/").filter(Boolean).map(decodeURIComponent);
+    const parts = (ES ? location.pathname.replace(LG_RE, "") : location.pathname).split("/").filter(Boolean).map(decodeURIComponent);
     if (!parts.length) return { parts: [], params };
     // section names are matched case-insensitively (/Life, /PATH/1); document ids keep their case (citations/R49)
     const first = parts[0].toLowerCase(), rest = parts.slice(1);
@@ -208,7 +213,7 @@
     const url = h.startsWith("#") ? toPath(h) : loc(h);
     if (url === routeKey()) return;
     // The other language is a different page load (its own interface strings and data).
-    if (isEs(url) !== ES) { location.href = url; return; }
+    if (langOf(url) !== LG) { location.href = url; return; }
     history[replace ? "replaceState" : "pushState"](null, "", url);
     navigate();
   }
@@ -291,8 +296,8 @@
   // The language menu: every language, named in its own words; each goes to this same page in that language,
   // or to that language's home page when this page is not translated yet.
   const LANGS = window.LANGS || [{ code: "en", name: "English", prefix: "", home: "Home page" }];
-  const CUR = LANGS.find((l) => l.code === (ES ? "es" : "en")) || LANGS[0];
-  const enPath = () => (ES ? location.pathname.replace(/^\/es(?=\/|$)/, "") : location.pathname) || "/";
+  const CUR = LANGS.find((l) => l.code === LG) || LANGS[0];
+  const enPath = () => (ES ? location.pathname.replace(LG_RE, "") : location.pathname) || "/";
   const twinOf = (l) => {
     const en = enPath();
     if (!l.prefix) return { href: en + location.search, here: true };
@@ -603,7 +608,11 @@
     const long = now.toLocaleDateString(LOCALE, { year: "numeric", month: "long", day: "numeric" });
     const url = SITE + citeInfo.path;
     const t = esc(citeInfo.title);
-    const styles = ES ? [
+    const styles = PT ? [
+      ["Chicago", `“${t}.” The Jesus Archive. Acesso em ${long}. ${url}.`],
+      ["MLA", `“${t}.” <i>The Jesus Archive</i>, ${url.replace(/^https:\/\//, "")}. Acesso em ${long}.`],
+      ["APA", `The Jesus Archive. (s.d.). <i>${t}</i>. Recuperado em ${long}, de ${url}`],
+    ] : ES ? [
       ["Chicago", `“${t}.” The Jesus Archive. Consultado el ${long}. ${url}.`],
       ["MLA", `“${t}.” <i>The Jesus Archive</i>, ${url.replace(/^https:\/\//, "")}. Consultado el ${long}.`],
       ["APA", `The Jesus Archive. (s. f.). <i>${t}</i>. Recuperado el ${long}, de ${url}`],
@@ -896,7 +905,7 @@
     const io = new IntersectionObserver(async ([en]) => {
       if (!en.isIntersecting) return;
       io.disconnect();
-      chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1795128513").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1795128513"));
+      chainReady ||= (ES ? loadScript(`data-js/${LG}/chain.js?v=1795154348`).catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1795154348"));
       try { await chainReady; } catch { return; }
       if (!box.isConnected) return;
       LUX.chain.render(box, new URLSearchParams("compact=1"), (f) => cleanup.push(f));
@@ -1347,7 +1356,7 @@
       if (btn.classList.contains("on")) return stop();
       btn.classList.add("on"); label.textContent = "Stop";
       if (!audio) {
-        audio = new Audio(`audio/path/${n}.mp3?v=1795128513`);
+        audio = new Audio(`audio/path/${n}.mp3?v=1795154348`);
         audio.defaultPlaybackRate = 1.1; audio.playbackRate = 1.1; audio.preservesPitch = true;
         audio.onended = done;
         audio.onerror = () => { audio = null; if (btn.classList.contains("on")) speak(); };
@@ -1361,9 +1370,10 @@
   /* ═════════════ SIDE BY SIDE ═════════════ */
   // Common Spanish words left unmarked in the side-by-side columns on Spanish pages.
   const STOP_ES = new Set("que los las del por con una para como más pero sus les este esta ese esa entre cuando muy sin sobre también hasta hay donde quien desde todo nos durante todos uno les contra otros fue era han había ser son está estaba sido tiene tenía dijo dice les ellos ella ellas él".split(" "));
+  const STOP_PT = new Set("que os as dos das por com uma para como mais mas seus suas lhe lhes este esta esse essa entre quando muito sem sobre também até onde quem desde todo todos nos durante contra outros foi era eram tem tinha ser são está estava sido disse diz eles elas ele ela não nem pelo pela pelos pelas num numa isso isto aquele aquela".split(" "));
   const STOP = new Set("the and of to a in that he his him they them their it is was for with as be on not but at by this which have from or had all were said who will you your are when there into one so i we my me what out up then also an no if these those shall has did do".split(" "));
   async function renderCompare(slug) {
-    if (!COMPARE) await loadScript(`data-js/${ES ? "es/" : ""}compare.js?v=1795128513`);
+    if (!COMPARE) await loadScript(`data-js/${ES ? LG + "/" : ""}compare.js?v=1795154348`);
     const list = COMPARE || [];
     if (!slug) {
       document.title = `${tr("Compare the Accounts")} | The Jesus Archive`;
@@ -1399,7 +1409,7 @@
       while (w.nextNode()) if (!w.currentNode.parentElement.closest("sup")) nodes.push(w.currentNode);
       nodes.forEach((n) => {
         const span = document.createElement("span");
-        span.innerHTML = esc(n.nodeValue).replace(/[\p{L}’']{3,}/gu, (m) => { const k = m.toLowerCase().replace(/[’']s$/, ""); return STOP.has(k) || STOP_ES.has(k) ? m : `<span class="w" data-w="${k}">${m}</span>`; });
+        span.innerHTML = esc(n.nodeValue).replace(/[\p{L}’']{3,}/gu, (m) => { const k = m.toLowerCase().replace(/[’']s$/, ""); return STOP.has(k) || STOP_ES.has(k) || STOP_PT.has(k) ? m : `<span class="w" data-w="${k}">${m}</span>`; });
         n.replaceWith(span);
       });
     });
@@ -1546,7 +1556,7 @@
   let chainReady = null;
   async function renderChain(params) {
     document.title = `${tr("The Chain of Witnesses")} | The Jesus Archive`;
-    chainReady ||= (ES ? loadScript("data-js/es/chain.js?v=1795128513").catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1795128513"));
+    chainReady ||= (ES ? loadScript(`data-js/${LG}/chain.js?v=1795154348`).catch(() => {}) : Promise.resolve()).then(() => loadScript("assets/chain.js?v=1795154348"));
     try { await chainReady; } catch { view.innerHTML = `<p class="loading">${tr("The chart could not be loaded.")}</p>`; return; }
     LUX.chain.render(view, params, (f) => cleanup.push(f));
   }
@@ -1579,7 +1589,7 @@
       <div class="map-legend"><h1 class="caps">${tr("The Map")}</h1><p>${tr("Where each witness was written, found or kept. Drag to move; scroll or pinch to zoom.")}</p>
         <div class="map-toggle" role="tablist"><button type="button" data-layer="origins" class="on">${tr("Where written")}</button><button type="button" data-layer="story">${tr("Places in the story")}</button></div></div></section>`;
     if (!window.d3) await loadScript("assets/vendor/d3.min.js");
-    if (!GEO) await loadScript("data-js/geo.js?v=1795128513");
+    if (!GEO) await loadScript("data-js/geo.js?v=1795154348");
     if (parseHash().parts[0] !== "map") return;
     const wrap = $("#mapWrap"), panel = $("#mapPanel");
     const W = 1600, H = 1000;
@@ -1680,7 +1690,7 @@
         <span class="caps">${esc(p.region || "")}</span><h2>${esc(p.name)}</h2>
         ${p.bio?.[0] ? `<p>${p.bio[0]}</p>` : ""}
         ${docs.length ? `<h3 class="caps">${tr("Written or found here")}</h3><ul>${docs.map((c) => `<li style="${accent(c.section)}"><a href="#/doc/${c.id}"><i>${esc(yearText(c.year))}</i>${esc(c.title)}</a></li>`).join("")}</ul>` : ""}
-        <a class="link-gold" href="#/p/${slug}">${ES ? `${p.mentions?.length || 0} escritos mencionan ${esc(p.name)}` : `${p.mentions?.length || 0} writings mention ${esc(p.name)}`} <span class="arrow">→</span></a>`;
+        <a class="link-gold" href="#/p/${slug}">${PT ? `${p.mentions?.length || 0} escritos mencionam ${esc(p.name)}` : ES ? `${p.mentions?.length || 0} escritos mencionan ${esc(p.name)}` : `${p.mentions?.length || 0} writings mention ${esc(p.name)}`} <span class="arrow">→</span></a>`;
       panel.classList.add("on");
       $(".map-close", panel).addEventListener("click", () => { panel.classList.remove("on"); $$(".pin", wrap).forEach((x) => x.classList.remove("sel")); });
       if (fly) {
@@ -1724,13 +1734,13 @@
   const QA_KEYS = new Set(["witnesses/tacitus-annals-15-44", "witnesses/josephus-antiquities-18", "archaeology/pilate-inscription", "study:resurrection"]);
   async function qaBlock(key) {
     if (!QA_KEYS.has(key)) return "";
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1795128513`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? LG + "/" : ""}pages.js?v=1795154348`).catch(() => {});
     const Q = window.PAGES?._qa?.[key];
     return Q ? `<section class="qa-block reveal" id="questions"><span class="caps">${tr("Questions and answers")}</span><h2>${esc(Q.title)}</h2><article class="folio"><div class="prose page-prose">${Q.html}</div></article></section>` : "";
   }
 
   async function renderPage(k) {
-    if (!window.PAGES) await loadScript(`data-js/${ES ? "es/" : ""}pages.js?v=1795128513`).catch(() => {});
+    if (!window.PAGES) await loadScript(`data-js/${ES ? LG + "/" : ""}pages.js?v=1795154348`).catch(() => {});
     const P = window.PAGES?.[k];
     if (!P) return renderLost();
     document.title = `${P.title} | The Jesus Archive`;
@@ -1743,13 +1753,13 @@
   /* ═════════════ GALLERY ═════════════ */
   async function renderGallery(focus) {
     document.title = `${tr("The Gallery")} | The Jesus Archive`;
-    if (!window.STORIES) await loadScript(ES ? "data-js/es/stories.js?v=1795128513" : "assets/stories.js?v=1795128513").catch(() => (window.STORIES = {}));
+    if (!window.STORIES) await loadScript(ES ? `data-js/${LG}/stories.js?v=1795154348` : "assets/stories.js?v=1795154348").catch(() => (window.STORIES = {}));
     const STORIES = window.STORIES || {};
     const uses = {};
     Object.values(CARDS).forEach((c) => c.section !== "sources" && (uses[c.plate] ||= []).push(c));
     // An artwork's own address (/gallery/<slug>) opens on that work: its painting and title head the page.
     const fa = focus && GALLERY.find((a) => a.slug === focus);
-    const artBanner = (a) => banner({ slug: a.slug, title: esc(a.title), lede: ES ? `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. Una de las obras de <a href="/es/gallery">la galería</a> de este archivo.` : `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. One of the works in <a href="/gallery">the gallery</a> of this archive.` });
+    const artBanner = (a) => banner({ slug: a.slug, title: esc(a.title), lede: PT ? `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. Uma das obras da <a href="/pt/gallery">galeria</a> deste arquivo.` : ES ? `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. Una de las obras de <a href="/es/gallery">la galería</a> de este archivo.` : `${esc(a.artist)} · ${esc(a.year)} · ${esc(a.place)}. One of the works in <a href="/gallery">the gallery</a> of this archive.` });
     const hallBanner = () => banner({ slug: "school-athens", title: tr("The Gallery"), lede: tr("The paintings and sculptures that light this archive. Walk along the wall, and choose any painting to hear its story.") });
     // On an artwork's page the header follows the painting being read, so heading and address always agree.
     const swapBanner = (html) => { if (fa) { const b = $(".banner", view); if (b) b.outerHTML = html; } };
@@ -1827,7 +1837,7 @@
     if (a.classList.contains("gl")) {
       const g = GLOSS?.[a.dataset.gl];
       if (!g) return;
-      refcard.innerHTML = `<b>Glossary</b><p class="gl-term">${esc(g.term)}</p><p>${esc(g.def)}</p>`;
+      refcard.innerHTML = `<b>${tr("Glossary")}</b><p class="gl-term">${esc(g.term)}</p><p>${esc(g.def)}</p>`;
       return placeCard(a);
     }
     const href = a.getAttribute("href") || "";
@@ -1871,7 +1881,7 @@
   /* ───────── margin notes ───────── */
   // Short glosses beside a document's text: in the empty left margin on wide screens, under their paragraph otherwise.
   let notesReady = null, snItems = [], snWrap = null;
-  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1795128513").catch(() => {}));
+  const getNotes = () => (notesReady ||= loadScript("data-js/notes.js?v=1795154348").catch(() => {}));
   function sidenotes() {
     const wrap = $(".text-wrap[data-doc]", view);
     snItems = []; snWrap = null;
